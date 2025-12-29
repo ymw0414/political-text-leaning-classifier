@@ -1,50 +1,48 @@
 """
 01_load_speeches.py
-
-This script loads all Congressional speech files (speeches_043.txt ~ speeches_111.txt),
-parses them safely using a custom splitter, and stores the merged dataset as a parquet file.
-
-Output:
-    data/processed/speeches_merged.parquet
+Load Congressional speeches and save as parquet
 """
 
 import pandas as pd
 from pathlib import Path
 
-speech_dir = Path(
+RAW_DIR = Path(
     r"C:\Users\ymw04\Dropbox\shifting_slant\data\raw\Congressional Speech Record Data\hein-bound"
 )
-
-all_rows = []
-
-for i in range(43, 112):
-    suffix = f"{i:03d}"
-    file = speech_dir / f"speeches_{suffix}.txt"
-
-    if not file.exists():
-        print("skip:", file)
-        continue
-
-    # Using cp1252 due to historical encoding of Congressional Record texts
-    with open(file, "r", encoding="cp1252") as f:
-        header = next(f)  # skip header
-
-        for line in f:
-            line = line.rstrip("\n")
-            parts = line.split("|", 1)  # split only at the first pipe
-
-            if len(parts) != 2:
-                continue
-
-            speech_id, speech = parts
-            all_rows.append((speech_id.strip(), speech.strip(), suffix))
-
-df = pd.DataFrame(all_rows, columns=["speech_id", "speech", "file_id"])
-
-out = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\processed\speeches_merged.parquet"
+OUT_DIR = Path(
+    r"C:\Users\ymw04\Dropbox\shifting_slant\data\processed"
 )
-df.to_parquet(out)
 
-print("Done.", df.shape)
-print("Saved to:", out)
+
+def load_speeches(raw_dir: Path) -> pd.DataFrame:
+    rows = []
+
+    for i in range(43, 112):
+        suffix = f"{i:03d}"
+        file = raw_dir / f"speeches_{suffix}.txt"
+
+        if not file.exists():
+            print("skip:", file)
+            continue
+
+        with open(file, encoding="cp1252") as f:
+            next(f)
+            for line in f:
+                parts = line.rstrip("\n").split("|", 1)
+                if len(parts) == 2:
+                    rows.append((parts[0], parts[1], suffix))
+
+    return pd.DataFrame(rows, columns=["speech_id", "speech", "congress"])
+
+
+def main():
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    df = load_speeches(RAW_DIR)
+
+    out = OUT_DIR / "speeches_merged.parquet"
+    df.to_parquet(out)
+    print("Saved:", out, df.shape)
+
+
+if __name__ == "__main__":
+    main()
