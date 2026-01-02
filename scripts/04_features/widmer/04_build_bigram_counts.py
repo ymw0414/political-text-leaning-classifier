@@ -59,7 +59,7 @@ def main():
 
     vectorizer = CountVectorizer(
         ngram_range=(2, 2),
-        min_df=20,          # Widmer cutoff
+        min_df=100,          # Widmer cutoff
         max_df=0.95,
         lowercase=False,
         tokenizer=str.split,
