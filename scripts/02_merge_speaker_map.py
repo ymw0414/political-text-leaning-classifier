@@ -8,10 +8,11 @@ import pandas as pd
 from pathlib import Path
 
 RAW_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\raw\Congressional Speech Record Data\hein-bound"
+    r"C:\Users\ymw04\Dropbox\shifting_slant\data\raw\speeches\hein-bound"
 )
+
 OUT_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\processed"
+    r"C:\Users\ymw04\Dropbox\shifting_slant\data\intermediate\speeches"
 )
 
 

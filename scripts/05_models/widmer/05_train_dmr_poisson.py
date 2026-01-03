@@ -65,7 +65,7 @@ model = LogisticRegression(
     C=1.0,                  # Widmer-style fixed regularization
     fit_intercept=True,     # absorb length / class imbalance
     solver="liblinear",
-    max_iter=1000,
+    max_iter=500,
     verbose=1               # ← progress output
 )
 
