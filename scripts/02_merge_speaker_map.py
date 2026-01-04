@@ -4,17 +4,34 @@
 Load SpeakerMap files correctly and save speaker-party mapping.
 """
 
+import os
 import pandas as pd
 from pathlib import Path
 
-RAW_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\raw\speeches\hein-bound"
+# --------------------------------------------------
+# Paths (OS-agnostic via env var)
+# --------------------------------------------------
+
+BASE_DIR = Path(os.environ["SHIFTING_SLANT_DIR"])
+
+RAW_DIR = (
+    BASE_DIR
+    / "data"
+    / "raw"
+    / "speeches"
+    / "hein-bound"
 )
 
-OUT_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\intermediate\speeches"
+OUT_DIR = (
+    BASE_DIR
+    / "data"
+    / "intermediate"
+    / "speeches"
 )
 
+# --------------------------------------------------
+# Load function
+# --------------------------------------------------
 
 def load_speaker_map(raw_dir: Path) -> pd.DataFrame:
     dfs = []
@@ -42,6 +59,9 @@ def load_speaker_map(raw_dir: Path) -> pd.DataFrame:
 
     return pd.concat(dfs, ignore_index=True)
 
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
 
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -51,7 +71,8 @@ def main():
     out = OUT_DIR / "speaker_map.parquet"
     df.to_parquet(out)
 
-    print("Saved:", out, df.shape)
+    print("Saved:", out)
+    print("Shape:", df.shape)
 
 
 if __name__ == "__main__":

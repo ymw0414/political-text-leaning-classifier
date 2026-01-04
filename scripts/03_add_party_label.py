@@ -5,17 +5,30 @@ Merge speeches with SpeakerMap using (speech_id, congress)
 to attach party labels.
 """
 
+import os
 import pandas as pd
 from pathlib import Path
 
-INTER_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\intermediate\speeches"
+# --------------------------------------------------
+# Paths (OS-agnostic via env var)
+# --------------------------------------------------
+
+BASE_DIR = Path(os.environ["SHIFTING_SLANT_DIR"])
+
+INTER_DIR = (
+    BASE_DIR
+    / "data"
+    / "intermediate"
+    / "speeches"
 )
 
 SPEECHES_PATH = INTER_DIR / "speeches_merged.parquet"
 SPEAKER_MAP_PATH = INTER_DIR / "speaker_map.parquet"
 OUT_PATH = INTER_DIR / "speeches_with_party.parquet"
 
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
 
 def main():
     speeches = pd.read_parquet(SPEECHES_PATH)
@@ -42,7 +55,8 @@ def main():
     )
 
     merged.to_parquet(OUT_PATH)
-    print("Saved:", OUT_PATH, merged.shape)
+    print("Saved:", OUT_PATH)
+    print("Shape:", merged.shape)
 
     # Sanity check
     print("\nParty value counts:")

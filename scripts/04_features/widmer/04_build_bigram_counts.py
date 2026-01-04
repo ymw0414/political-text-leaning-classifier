@@ -1,107 +1,165 @@
 """
 04_build_bigram_counts.py
 
-Widmer (2020) Appendix B compliant feature construction:
-- lowercase
-- punctuation / digits removal
-- stopword removal
-- Porter stemming
-- contiguous bigrams
-- party-conditional frequency filtering
+Congressional bigram construction (per Congress)
+Aligned with newspaper preprocessing
+Widmer (2020) style frequency filtering
+Additional removal of legislator last names
 """
 
+import os
 import re
-from pathlib import Path
+import argparse
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 
+from pathlib import Path
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
+from tqdm import tqdm
+
+# --------------------------------------------------
+# Arguments
+# --------------------------------------------------
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--congress", type=int, required=True)
+args = parser.parse_args()
+CONGRESS = args.congress
 
 # --------------------------------------------------
 # Paths
 # --------------------------------------------------
-BASE_DIR = Path(r"C:\Users\ymw04\Dropbox\shifting_slant\data\processed")
 
-INPUT_PATH = BASE_DIR / "speeches_with_party.parquet"
-OUT_X_PATH = BASE_DIR / "widmer_X_bigram_counts.npz"
-OUT_VOCAB_PATH = BASE_DIR / "widmer_bigram_vocab.csv"
-OUT_META_PATH = BASE_DIR / "widmer_doc_metadata.parquet"
+BASE_DIR = Path(os.environ["SHIFTING_SLANT_DIR"])
+
+INTER_DIR = BASE_DIR / "data" / "intermediate" / "speeches"
+OUT_DIR = BASE_DIR / "data" / "processed" / "speeches" / "bigrams"
+
+INPUT_PATH = INTER_DIR / "speeches_with_party.parquet"
+SPEAKER_MAP_PATH = INTER_DIR / "speaker_map.parquet"
+
+OUT_X = OUT_DIR / f"X_congress_{CONGRESS}.npz"
+OUT_VOCAB = OUT_DIR / f"vocab_congress_{CONGRESS}.csv"
+OUT_META = OUT_DIR / f"meta_congress_{CONGRESS}.parquet"
 
 # --------------------------------------------------
-# Setup
+# Preprocessing (identical to newspapers)
 # --------------------------------------------------
-TEXT_COL = "speech"
 
-TOKEN_RE = re.compile(r"[a-z]+")
+TOKEN_RE = re.compile(r"[a-z]{2,}")
 STEMMER = PorterStemmer()
 
-STOPWORDS = set(stopwords.words("english"))
+BASE_STOPWORDS = set(stopwords.words("english"))
 
-# minimal Congress-specific stopwords (placeholder)
-CONGRESS_STOPWORDS = {
-    "mr", "mrs", "speaker", "chairman", "gentleman",
-    "yield", "committee", "bill", "amendment"
+STATE_WORDS = {
+    "alabama","alaska","arizona","arkansas","california","colorado","connecticut",
+    "delaware","florida","georgia","hawaii","idaho","illinois","indiana","iowa",
+    "kansas","kentucky","louisiana","maine","maryland","massachusetts","michigan",
+    "minnesota","mississippi","missouri","montana","nebraska","nevada",
+    "new","york","jersey","mexico","north","south","carolina","dakota",
+    "ohio","oklahoma","oregon","pennsylvania","rhode","island",
+    "tennessee","texas","utah","vermont","virginia","washington",
+    "west","wisconsin","wyoming"
 }
 
-STOPWORDS = STOPWORDS.union(CONGRESS_STOPWORDS)
+PROCEDURAL_WORDS = {
+    "mr","mrs","speaker","chairman","gentleman",
+    "yield","committee","bill","amendment","motion"
+}
 
 # --------------------------------------------------
-# Preprocessing
+# Legislator last names
 # --------------------------------------------------
-def clean_and_stem(text):
+
+def load_legislator_last_names(path: Path):
+    df = pd.read_parquet(path)
+
+    lname_cols = [c for c in df.columns if "last" in c.lower()]
+    if not lname_cols:
+        raise RuntimeError("No last-name column found in speaker_map")
+
+    col = lname_cols[0]
+
+    names = (
+        df[col]
+        .dropna()
+        .astype(str)
+        .str.lower()
+        .str.replace(r"[^a-z]", "", regex=True)
+        .tolist()
+    )
+
+    return {STEMMER.stem(n) for n in names if len(n) >= 2}
+
+LEGISLATOR_LAST_NAMES = load_legislator_last_names(SPEAKER_MAP_PATH)
+
+STOPWORDS = (
+    BASE_STOPWORDS
+    | STATE_WORDS
+    | PROCEDURAL_WORDS
+    | LEGISLATOR_LAST_NAMES
+)
+
+# --------------------------------------------------
+# Cleaning function
+# --------------------------------------------------
+
+def clean_text(text):
     if not isinstance(text, str):
         return ""
-
-    text = text.lower()
-    tokens = TOKEN_RE.findall(text)
-
-    processed = []
-    for t in tokens:
-        stem = STEMMER.stem(t)
-        if stem not in STOPWORDS:
-            processed.append(stem)
-
-    return " ".join(processed)
+    tokens = TOKEN_RE.findall(text.lower())
+    return " ".join(
+        STEMMER.stem(t) for t in tokens if t not in STOPWORDS
+    )
 
 # --------------------------------------------------
 # Main
 # --------------------------------------------------
-def main():
 
-    print("Loading data...")
+def main():
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    print(f"Building congressional bigrams for Congress {CONGRESS}")
+
     df = pd.read_parquet(INPUT_PATH)
 
-    df = df.dropna(subset=[TEXT_COL, "party"])
-    df = df[df["party"].isin(["D", "R"])]
-
     df["congress"] = df["congress"].astype(int)
-    df = df[df["congress"] >= 93].reset_index(drop=True)
+    df = df[
+        (df["congress"] == CONGRESS) &
+        (df["party"].isin(["D", "R"]))
+    ].reset_index(drop=True)
 
-    print("Preprocessing text...")
-    df["clean_text"] = df[TEXT_COL].map(clean_and_stem)
+    print(f"Documents before cleaning: {len(df):,}")
 
-    # --------------------------------------------------
-    # Initial bigram construction (no filtering yet)
-    # --------------------------------------------------
-    print("Building initial bigram matrix...")
+    df["clean_text"] = [
+        clean_text(t)
+        for t in tqdm(df["speech"], desc="Preprocessing text")
+    ]
+
+    before = len(df)
+    df = df[df["clean_text"].str.len() > 0].reset_index(drop=True)
+    after = len(df)
+
+    print(f"Dropped empty documents: {before - after:,}")
+    print(f"Documents after cleaning: {after:,}")
+
+    if len(df) == 0:
+        raise RuntimeError(f"No usable documents for Congress {CONGRESS}")
+
+    print("Building bigram count matrix...")
     vectorizer = CountVectorizer(
         ngram_range=(2, 2),
-        lowercase=False,
         tokenizer=str.split,
-        token_pattern=None
+        lowercase=False
     )
 
     X_full = vectorizer.fit_transform(df["clean_text"])
     vocab = np.array(vectorizer.get_feature_names_out())
 
-    # --------------------------------------------------
-    # Party-conditional document frequency
-    # --------------------------------------------------
     print("Applying Widmer frequency filtering...")
-
     is_R = (df["party"] == "R").to_numpy()
     is_D = (df["party"] == "D").to_numpy()
 
@@ -110,34 +168,27 @@ def main():
     df_R = np.asarray(X_bin[is_R].sum(axis=0)).ravel()
     df_D = np.asarray(X_bin[is_D].sum(axis=0)).ravel()
 
-    n_R = is_R.sum()
-    n_D = is_D.sum()
-
-    freq_R = df_R / n_R
-    freq_D = df_D / n_D
+    freq_R = df_R / is_R.sum()
+    freq_D = df_D / is_D.sum()
 
     keep = (
         ((freq_R >= 0.001) | (freq_D >= 0.001)) &
         ((freq_R >= 0.0001) & (freq_D >= 0.0001))
     )
 
-    vocab_kept = vocab[keep]
     X = X_full[:, keep]
+    vocab_kept = vocab[keep]
 
-    print("Final vocab size:", len(vocab_kept))
+    print(f"Final vocabulary size: {len(vocab_kept):,}")
 
-    # --------------------------------------------------
-    # Save outputs
-    # --------------------------------------------------
-    sp.save_npz(OUT_X_PATH, X)
+    sp.save_npz(OUT_X, X)
+    pd.DataFrame({"bigram": vocab_kept}).to_csv(OUT_VOCAB, index=False)
+    df[["speech_id", "congress", "party"]].to_parquet(OUT_META)
 
-    pd.DataFrame({"bigram": vocab_kept}).to_csv(OUT_VOCAB_PATH, index=False)
-
-    meta = df[["speech_id", "congress", "party"]]
-    meta.to_parquet(OUT_META_PATH)
-
-    print("Saved bigram matrix:", X.shape)
-    print("Done.")
+    print(f"Saved X: {OUT_X}")
+    print(f"Saved vocab: {OUT_VOCAB}")
+    print(f"Saved meta: {OUT_META}")
+    print(f"X shape: {X.shape}")
 
 if __name__ == "__main__":
     main()

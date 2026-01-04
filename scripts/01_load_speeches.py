@@ -3,17 +3,34 @@
 Load Congressional speeches and save as parquet
 """
 
+import os
 import pandas as pd
 from pathlib import Path
 
-RAW_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\raw\speeches\hein-bound"
+# --------------------------------------------------
+# Paths (OS-agnostic via env var)
+# --------------------------------------------------
+
+BASE_DIR = Path(os.environ["SHIFTING_SLANT_DIR"])
+
+RAW_DIR = (
+    BASE_DIR
+    / "data"
+    / "raw"
+    / "speeches"
+    / "hein-bound"
 )
 
-OUT_DIR = Path(
-    r"C:\Users\ymw04\Dropbox\shifting_slant\data\intermediate\speeches"
+OUT_DIR = (
+    BASE_DIR
+    / "data"
+    / "intermediate"
+    / "speeches"
 )
 
+# --------------------------------------------------
+# Load function
+# --------------------------------------------------
 
 def load_speeches(raw_dir: Path) -> pd.DataFrame:
     rows = []
@@ -33,16 +50,25 @@ def load_speeches(raw_dir: Path) -> pd.DataFrame:
                 if len(parts) == 2:
                     rows.append((parts[0], parts[1], suffix))
 
-    return pd.DataFrame(rows, columns=["speech_id", "speech", "congress"])
+    return pd.DataFrame(
+        rows,
+        columns=["speech_id", "speech", "congress"]
+    )
 
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
 
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+
     df = load_speeches(RAW_DIR)
 
     out = OUT_DIR / "speeches_merged.parquet"
     df.to_parquet(out)
-    print("Saved:", out, df.shape)
+
+    print("Saved:", out)
+    print("Shape:", df.shape)
 
 
 if __name__ == "__main__":
