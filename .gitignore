@@ -1,0 +1,6 @@
+# ignore everything
+*
+
+# allow scripts folder
+!scripts/
+!scripts/**
