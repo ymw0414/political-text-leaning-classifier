@@ -1,8 +1,8 @@
 """
 06_project_widmer.py
 
-Project congressional partisan loadings (phi) onto newspapers
-using shared Congress–Newspaper vocabulary (per Congress).
+Project Widmer partisan scores onto newspaper articles
+(per Congress, shared vocabulary only).
 """
 
 import os
@@ -52,7 +52,6 @@ def main():
 
     print(f"Projecting slant for Congress {CONGRESS}")
 
-    # load inputs
     X = sp.load_npz(X_NEWS)
     meta = pd.read_parquet(META_NEWS)
 
@@ -60,26 +59,26 @@ def main():
     vocab_shared = pd.read_csv(SHARED_VOCAB)["bigram"].tolist()
 
     phi = np.load(PHI_PATH)
-    intercept = np.load(INTERCEPT_PATH).item()
+    intercept = float(np.load(INTERCEPT_PATH))
 
-    # align X_news to shared vocab
     index = {v: i for i, v in enumerate(vocab_news)}
     keep_idx = [index[v] for v in vocab_shared if v in index]
 
     if len(keep_idx) != len(phi):
-        raise RuntimeError("Shared vocab and phi size mismatch")
+        raise RuntimeError("Shared vocab and phi dimension mismatch")
 
     X_shared = X[:, keep_idx]
 
-    # projection
     slant = X_shared.dot(phi) + intercept
+    used_terms = np.asarray(X_shared.sum(axis=1)).ravel()
 
     meta = meta.copy()
     meta["slant"] = slant
+    meta["used_terms"] = used_terms
 
     meta.to_parquet(OUT_SLANT)
 
-    print(f"Saved slant file: {OUT_SLANT}")
+    print(f"Saved: {OUT_SLANT}")
     print(f"Rows: {len(meta):,}")
 
 if __name__ == "__main__":
