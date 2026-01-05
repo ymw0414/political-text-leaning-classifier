@@ -1,5 +1,5 @@
 """
-07a_aggregate_newspaper_year.py
+07b_aggregate_newspaper_year.py
 
 Aggregate article-level slant to newspaper-year level
 using word_count-weighted averages (Widmer-style).

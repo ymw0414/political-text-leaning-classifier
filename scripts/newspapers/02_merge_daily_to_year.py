@@ -27,11 +27,9 @@ CANON_COLS = [
     "year",
 ]
 
-
 def count_rows_fast(path):
     with open(path, "rb") as f:
         return max(sum(1 for _ in f) - 1, 0)
-
 
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -69,14 +67,13 @@ def main():
             if read_rows == 0:
                 continue
 
-            # ---- schema standardization (core fix) ----
+            # schema standardization
             df = df.rename(columns={
                 "paragraph": "text",
                 "office": "paper",
                 "words": "word_count",
             })
 
-            # ensure required columns exist
             for c in CANON_COLS:
                 if c not in df.columns:
                     df[c] = pd.NA
@@ -100,7 +97,6 @@ def main():
             f"skipped={total_raw - total_read}"
         )
         print("-" * 40)
-
 
 if __name__ == "__main__":
     main()
