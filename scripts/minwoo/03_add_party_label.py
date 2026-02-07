@@ -22,9 +22,9 @@ INTER_DIR = (
     / "speeches"
 )
 
-SPEECHES_PATH = INTER_DIR / "speeches_merged.parquet"
-SPEAKER_MAP_PATH = INTER_DIR / "speaker_map.parquet"
-OUT_PATH = INTER_DIR / "speeches_with_party.parquet"
+SPEECHES_PATH = INTER_DIR / "01_speeches_merged.parquet"
+SPEAKER_MAP_PATH = INTER_DIR / "02_speaker_map.parquet"
+OUT_PATH = INTER_DIR / "03_speeches_with_party.parquet"
 
 # --------------------------------------------------
 # Main
