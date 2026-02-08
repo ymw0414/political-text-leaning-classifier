@@ -1,12 +1,18 @@
 """
-04_label_ideology_extremes.py
+04_label_partisan_core.py
 
 Merge Hein-Bound speaker data with Voteview DW-NOMINATE scores
-and label ideology extremes using nokken_poole_dim1.
+and identify each party's "partisan core" using nokken_poole_dim1.
+
+The top-20th-percentile legislators are not "extremists" -- they are
+the members whose voting records most faithfully reflect their party's
+brand language and policy platform in a given congress.
 
 Labels (per congress, per party):
-  - label_radical_right : Republican top 20th percentile (most conservative)
-  - label_radical_left  : Democrat  bottom 20th percentile (most liberal)
+  - label_rep_core : Republican Partisan Core
+        Top 20 pctl of nokken_poole_dim1 (strongest R brand)
+  - label_dem_core : Democratic Partisan Core
+        Bottom 20 pctl of nokken_poole_dim1 (strongest D brand)
 
 Matching strategy (Hein-Bound <-> Voteview):
   1. Normalize last names  (strip apostrophes, hyphens, etc.)
@@ -27,7 +33,7 @@ BASE_DIR = Path(os.environ["SHIFTING_SLANT_DIR"])
 
 SPEAKER_MAP_PATH = BASE_DIR / "data" / "intermediate" / "speeches" / "02_speaker_map.parquet"
 HSALL_PATH = BASE_DIR / "data" / "raw" / "voteview_nominate" / "HSall_members.csv"
-OUT_PATH = BASE_DIR / "data" / "intermediate" / "speeches" / "04_speeches_with_ideology.parquet"
+OUT_PATH = BASE_DIR / "data" / "intermediate" / "speeches" / "04_speeches_with_partisan_core.parquet"
 
 CONGRESS_MIN, CONGRESS_MAX = 99, 108
 
@@ -124,16 +130,19 @@ crosswalk = merged[merged["icpsr"].notna()][["speakerid", "icpsr"]].copy()
 crosswalk["icpsr"] = crosswalk["icpsr"].astype(int)
 
 # ------------------------------------------------------------------
-# 4. Label ideology extremes (per congress, per party)
+# 4. Label party identity cores (per congress, per party)
+#
+#    These are NOT "extremists". They are the legislators whose voting
+#    behavior most clearly embodies their party's policy platform --
+#    the partisan core who carry the party's brand language.
 # ------------------------------------------------------------------
-# Build legislator-level label table
 leg = hs[["icpsr", "congress", "party_code", "nokken_poole_dim1"]].copy()
 
-leg["label_radical_right"] = 0
-leg["label_radical_left"] = 0
+leg["label_rep_core"] = 0
+leg["label_dem_core"] = 0
 
 for cong, grp in leg.groupby("congress"):
-    # Radical Right: Republicans in top 20% (most conservative)
+    # Republican Partisan Core: top 20 pctl (strongest conservative brand)
     reps = grp[grp["party_code"] == 200]
     if len(reps) > 0:
         threshold = reps["nokken_poole_dim1"].quantile(0.80)
@@ -142,9 +151,9 @@ for cong, grp in leg.groupby("congress"):
             & (leg["party_code"] == 200)
             & (leg["nokken_poole_dim1"] >= threshold)
         )
-        leg.loc[mask, "label_radical_right"] = 1
+        leg.loc[mask, "label_rep_core"] = 1
 
-    # Radical Left: Democrats in bottom 20% (most liberal)
+    # Democratic Partisan Core: bottom 20 pctl (strongest progressive brand)
     dems = grp[grp["party_code"] == 100]
     if len(dems) > 0:
         threshold = dems["nokken_poole_dim1"].quantile(0.20)
@@ -153,14 +162,14 @@ for cong, grp in leg.groupby("congress"):
             & (leg["party_code"] == 100)
             & (leg["nokken_poole_dim1"] <= threshold)
         )
-        leg.loc[mask, "label_radical_left"] = 1
+        leg.loc[mask, "label_dem_core"] = 1
 
 # ------------------------------------------------------------------
 # 5. Attach labels to speeches via crosswalk
 # ------------------------------------------------------------------
 sp_labeled = sp.merge(crosswalk, on="speakerid", how="inner")
 sp_labeled = sp_labeled.merge(
-    leg[["icpsr", "congress", "label_radical_right", "label_radical_left",
+    leg[["icpsr", "congress", "label_rep_core", "label_dem_core",
          "nokken_poole_dim1"]],
     left_on=["icpsr", "congress_int"],
     right_on=["icpsr", "congress"],
@@ -191,8 +200,8 @@ summary = (
     .groupby("congress_int")
     .agg(
         total_speeches=("speech_id", "count"),
-        radical_right=("label_radical_right", "sum"),
-        radical_left=("label_radical_left", "sum"),
+        rep_core=("label_rep_core", "sum"),
+        dem_core=("label_dem_core", "sum"),
     )
     .astype(int)
 )
@@ -202,8 +211,8 @@ print("=" * 72)
 # Unique legislator counts
 print("\nVALIDATION: Unique legislators per label per congress")
 print("=" * 72)
-for label_col, label_name in [("label_radical_right", "Radical Right"),
-                               ("label_radical_left", "Radical Left")]:
+for label_col, label_name in [("label_rep_core", "Republican Partisan Core"),
+                               ("label_dem_core", "Democratic Partisan Core")]:
     sub = sp_labeled[sp_labeled[label_col] == 1]
     counts = sub.groupby("congress_int")["icpsr"].nunique()
     print(f"\n  {label_name} (unique members):")
