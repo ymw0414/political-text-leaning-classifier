@@ -8,6 +8,7 @@ Inputs:
   - data/processed/newspapers/minwoo/11_newspaper_year_panel_geo.parquet
   - data/processed/econ/minwoo/12_nafta_vars_cz.parquet
   - data/processed/econ/minwoo/12_nafta_vars_county.parquet  (for education/income controls)
+  - data/processed/econ/minwoo/12c_china_shock_cz.parquet    (ADH China shock)
   - data/raw/econ/crosswalk/cw_cty_czone/cw_cty_czone.dta
 
 Outputs:
@@ -28,6 +29,8 @@ CZ_NAFTA = (BASE_DIR / "data" / "processed" / "econ" / "minwoo"
             / "12_nafta_vars_cz.parquet")
 COUNTY_NAFTA = (BASE_DIR / "data" / "processed" / "econ" / "minwoo"
                 / "12_nafta_vars_county.parquet")
+CHINA_SHOCK = (BASE_DIR / "data" / "processed" / "econ" / "minwoo"
+               / "12c_china_shock_cz.parquet")
 CZ_XW_PATH = (BASE_DIR / "data" / "raw" / "econ" / "crosswalk"
               / "cw_cty_czone" / "cw_cty_czone.dta")
 
@@ -126,12 +129,18 @@ def main():
     panel = panel.merge(cz_tv, on=["cz", "year"], how="left")
     # Education/income controls
     panel = panel.merge(cz_controls, on="cz", how="left")
+    # ADH China shock (CZ-level, cross-sectional)
+    china = pd.read_parquet(CHINA_SHOCK)
+    panel = panel.merge(china, on="cz", how="left")
 
     assert len(panel) == n0, f"Row count changed: {n0} -> {len(panel)}"
 
     n_matched = panel["vulnerability1990_scaled"].notna().sum()
     print(f"  {n_matched}/{n0} rows matched with vulnerability data "
           f"({panel.loc[panel['vulnerability1990_scaled'].notna(), 'cz'].nunique()} CZs)")
+    n_china = panel["china_shock"].notna().sum()
+    print(f"  {n_china}/{n0} rows matched with China shock data "
+          f"({panel.loc[panel['china_shock'].notna(), 'cz'].nunique()} CZs)")
 
     # 5. Add NAFTA timing variables
     panel["post_nafta"] = (panel["year"] >= NAFTA_YEAR).astype(int)

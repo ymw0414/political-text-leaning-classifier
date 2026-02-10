@@ -16,10 +16,19 @@ import os
 import numpy as np
 import pandas as pd
 import geopandas as gpd
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
 from pathlib import Path
+
+# Use Computer Modern (LaTeX) fonts
+matplotlib.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman", "CMU Serif", "Times New Roman"],
+    "mathtext.fontset": "cm",
+    "text.usetex": False,
+})
 
 BASE_DIR = Path(os.environ["SHIFTING_SLANT_DIR"])
 SHP_PATH = (BASE_DIR / "data" / "raw" / "econ" / "shapefiles"
