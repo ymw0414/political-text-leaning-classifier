@@ -74,36 +74,57 @@ print(f"  Matrix: {X_all.shape[0]:,} docs x {n_full_features:,} features")
 # ------------------------------------------------------------------
 print("\nComputing speech-newspaper vocabulary intersection ...")
 
-# Find columns that have any non-zero value in ANY newspaper TF-IDF matrix
-newspaper_feature_mask = np.zeros(n_full_features, dtype=bool)
+MIN_NEWSPAPER_DF = 100  # Minimum number of newspaper articles for a feature
+
+# Count how many newspaper articles contain each feature (across all congresses)
+newspaper_doc_count = np.zeros(n_full_features, dtype=np.int64)
+total_newspaper_articles = 0
 for cong in range(100, 109):
     tfidf_path = NEWSPAPER_DIR / f"07_newspaper_tfidf_cong_{cong}.npz"
     if not tfidf_path.exists():
         print(f"  WARNING: {tfidf_path.name} not found, skipping")
         continue
     nX = sp.load_npz(tfidf_path)
-    # For CSR matrix, find columns with any non-zero entry
     col_nnz = np.diff(nX.tocsc().indptr)  # number of non-zeros per column
-    newspaper_feature_mask |= (col_nnz > 0)
-    n_active = newspaper_feature_mask.sum()
+    newspaper_doc_count += col_nnz
+    total_newspaper_articles += nX.shape[0]
+    n_above = (newspaper_doc_count >= MIN_NEWSPAPER_DF).sum()
     print(f"  Congress {cong}: {nX.shape[0]:,} articles, "
-          f"cumulative newspaper features: {n_active:,}")
+          f"features with DF >= {MIN_NEWSPAPER_DF}: {n_above:,}")
     del nX
     import gc; gc.collect()
+
+# Newspaper DF distribution (features with DF > 0)
+nz_mask = newspaper_doc_count > 0
+nz_counts = newspaper_doc_count[nz_mask]
+print(f"\n  Newspaper DF distribution (features with DF > 0, n={nz_mask.sum():,}):")
+for pctl in [10, 25, 50, 75, 90, 95, 99]:
+    print(f"    {pctl:2d}th percentile: {int(np.percentile(nz_counts, pctl)):,} articles")
+print(f"  Total newspaper articles: {total_newspaper_articles:,}")
+
+# Apply newspaper DF floor
+newspaper_feature_mask = (newspaper_doc_count >= MIN_NEWSPAPER_DF)
 
 # Also find columns with any non-zero value in speech TF-IDF
 speech_col_nnz = np.diff(X_all.tocsc().indptr)
 speech_feature_mask = (speech_col_nnz > 0)
 
-# Intersection: features that appear in BOTH corpora
+# Intersection: features in BOTH corpora with sufficient newspaper presence
 intersection_mask = newspaper_feature_mask & speech_feature_mask
 intersection_cols = np.where(intersection_mask)[0]
 n_intersection = len(intersection_cols)
 
-print(f"\n  Speech features (non-zero): {speech_feature_mask.sum():,}")
-print(f"  Newspaper features (non-zero): {newspaper_feature_mask.sum():,}")
-print(f"  Intersection features: {n_intersection:,}")
-print(f"  Dropped (speech-only): {speech_feature_mask.sum() - n_intersection:,}")
+n_newspaper_any = (newspaper_doc_count > 0).sum()
+n_speech = speech_feature_mask.sum()
+n_binary_intersection = ((newspaper_doc_count > 0) & speech_feature_mask).sum()
+
+print(f"\n  Speech features (non-zero): {n_speech:,}")
+print(f"  Newspaper features (DF > 0): {n_newspaper_any:,}")
+print(f"  Newspaper features (DF >= {MIN_NEWSPAPER_DF}): {newspaper_feature_mask.sum():,}")
+print(f"  Binary intersection (DF > 0): {n_binary_intersection:,}")
+print(f"  Final intersection (DF >= {MIN_NEWSPAPER_DF}): {n_intersection:,}")
+print(f"  Dropped by speech-only filter: {n_speech - n_binary_intersection:,}")
+print(f"  Dropped by DF floor: {n_binary_intersection - n_intersection:,}")
 
 # Save intersection column indices for use in step 08
 np.save(OUT_DIR / "06_intersection_cols.npy", intersection_cols)

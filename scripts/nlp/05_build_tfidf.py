@@ -430,8 +430,8 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------
     # 1. Load data
     # ------------------------------------------------------------------
-    print("Loading speech text ...")
-    speeches = pd.read_parquet(SPEECHES_PATH)
+    print("Loading speech text (speech_id + speech columns only) ...")
+    speeches = pd.read_parquet(SPEECHES_PATH, columns=["speech_id", "speech"])
 
     print("Loading partisan-core labels ...")
     labels = pd.read_parquet(LABELS_PATH)
@@ -443,18 +443,32 @@ if __name__ == "__main__":
     english_stops, geo_unigrams, blocked_bigrams, distinctive_names = build_filter_sets(VOTEVIEW_PATH)
 
     # ------------------------------------------------------------------
-    # 3. Merge text with labels
+    # 3. Merge text with labels (inner join keeps only labeled speeches)
     # ------------------------------------------------------------------
     print("\nMerging text with labels ...")
     speeches["speech_id"] = speeches["speech_id"].astype(str)
     labels["speech_id"] = labels["speech_id"].astype(str)
 
-    merged = labels.merge(
-        speeches[["speech_id", "speech"]],
-        on="speech_id",
-        how="inner",
-    )
+    merged = labels.merge(speeches, on="speech_id", how="inner")
+    del speeches  # free memory
     print(f"  Merged: {len(merged):,} speeches with text + labels")
+
+    # ------------------------------------------------------------------
+    # 3b. Filter short procedural speeches
+    # ------------------------------------------------------------------
+    MIN_SPEECH_WORDS = 100
+
+    print(f"\nFiltering speeches shorter than {MIN_SPEECH_WORDS} words ...")
+    # Count spaces as proxy for word count (memory-efficient)
+    wc = merged["speech"].astype(str).str.count(" ") + 1
+    n_before = len(merged)
+    keep_mask = wc >= MIN_SPEECH_WORDS
+    merged = merged[keep_mask].copy()
+    n_after = len(merged)
+    del wc, keep_mask
+    pct_removed = (n_before - n_after) / n_before * 100
+    print(f"  Removed {n_before - n_after:,} speeches ({pct_removed:.1f}%) < {MIN_SPEECH_WORDS} words")
+    print(f"  Remaining: {n_after:,} substantive speeches")
 
     # ------------------------------------------------------------------
     # 4. Aggregate text by legislator-congress

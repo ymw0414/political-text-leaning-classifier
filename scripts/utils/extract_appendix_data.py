@@ -115,15 +115,30 @@ print("=" * 60)
 vec_path = BASE_DIR / "data" / "processed" / "speeches" / "05_tfidf_vectorizer.joblib"
 print(f"Loading vectorizer from {vec_path.name} ...")
 vectorizer = joblib.load(vec_path)
-feature_names = vectorizer.get_feature_names_out()
-print(f"  Features: {len(feature_names):,}")
+all_feature_names = vectorizer.get_feature_names_out()
+print(f"  Full features: {len(all_feature_names):,}")
+
+# Map through intersection columns (models operate in intersection space)
+MODEL_DIR = BASE_DIR / "data" / "processed" / "speeches" / "models"
+intersection_path = MODEL_DIR / "06_intersection_cols.npy"
+if intersection_path.exists():
+    intersection_cols = np.load(intersection_path)
+    # Some indices may exceed vectorizer vocab (newspaper-only features);
+    # map valid ones, label others as "UNK"
+    n_vocab = len(all_feature_names)
+    feature_names = np.array([
+        all_feature_names[i] if i < n_vocab else f"feat_{i}"
+        for i in intersection_cols
+    ])
+    print(f"  Intersection features: {len(feature_names):,} "
+          f"({(intersection_cols < n_vocab).sum():,} named)")
+else:
+    feature_names = all_feature_names
 
 # Select representative windows
-MODEL_DIR = BASE_DIR / "data" / "processed" / "speeches" / "models"
 windows_to_extract = [
     ("99_100", "99+100 (1985--88)"),
     ("103_104", "103+104 (1993--96)"),
-    ("107_108", "107+108 (2001--04)"),
 ]
 
 all_phrases = []
