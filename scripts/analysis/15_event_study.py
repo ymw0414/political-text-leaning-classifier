@@ -11,7 +11,6 @@ Two specifications (both with paper FE + year FE + division×year FE, cluster CZ
 Outcomes:
   Unconditional: net_slant_norm, politicization_norm
   Extensive margin: ext_nonzero, ext_R, ext_D
-  Intensive margin: int_net_slant_norm, int_R_norm, int_D_norm
 
 Inputs:
   - data/processed/panel/14_regression_panel.parquet
@@ -252,12 +251,6 @@ def main():
         ("ext_nonzero",          "Share Non-Zero Articles"),
         ("ext_R",                "Share R-Leaning Articles"),
         ("ext_D",                "Share D-Leaning Articles"),
-        # Intensive margins
-        ("int_net_slant_norm",   "Net Slant (Norm, Intensive)"),
-        ("int_R_norm",           "R Intensity (Norm, Intensive)"),
-        ("int_D_norm",           "D Intensity (Norm, Intensive)"),
-        ("int_right_norm",       "R Component (Norm, Intensive)"),
-        ("int_left_norm",        "L Component (Norm, Intensive)"),
     ]
 
     all_results = {}  # depvar -> {baseline: df, controls: df}
@@ -299,17 +292,6 @@ def main():
         label_right="Share R-leaning",
         label_left="Share D-leaning",
     )
-    # Intensive: R vs L components (conditional on nonzero)
-    # int_right_norm - int_left_norm = int_net_slant_norm
-    plot_combined_intensity(
-        all_results["int_right_norm"]["controls"],
-        all_results["int_left_norm"]["controls"],
-        "R vs. L Component (Norm, Intensive, with controls)",
-        FIG_DIR / "event_study_int_R_vs_D.png",
-        label_right="Republican component (\u0168 | nonzero)",
-        label_left="Democratic component (L\u0303 | nonzero)",
-    )
-
     # --- Save coefficients ---
     all_df = pd.concat(all_rows, ignore_index=True)
     tab_path = TAB_DIR / "event_study_coefficients.csv"

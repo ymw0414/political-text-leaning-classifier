@@ -67,7 +67,7 @@ def load_panel():
 def part1_circulation_response(df):
     """Test whether circulation/ad price responds to NAFTA vulnerability (long difference)."""
     print("\n" + "=" * 70)
-    print("  PART 1: Circulation & Ad Price Response to NAFTA")
+    print("  PART 3: Circulation & Ad Price Response to NAFTA")
     print("=" * 70)
 
     import statsmodels.api as sm
@@ -122,7 +122,7 @@ def part1_circulation_response(df):
         }
 
     # --- 3A: Overall long differences ---
-    print("\n  [1A] Overall Long Differences")
+    print("\n  [3A] Overall Long Differences")
     for var, label in [('ep_circ', 'Circulation'), ('ep_adprice', 'Ad Price')]:
         print(f"\n  --- {label} ---")
         unit = "pp" if var == 'ep_circ' else "$/col-inch"
@@ -136,7 +136,7 @@ def part1_circulation_response(df):
 def part2_ad_by_initial_lean(df):
     """Test whether ad price decline differs by initial partisan lean."""
     print("\n" + "=" * 70)
-    print("  PART 2: Ad Price Response by Initial Partisan Lean")
+    print("  PART 4: Ad Price Response by Initial Partisan Lean")
     print("=" * 70)
 
     import statsmodels.api as sm

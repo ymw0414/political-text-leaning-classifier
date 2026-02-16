@@ -95,20 +95,6 @@ def aggregate_subset(df):
     agg["ext_R"] = grp.apply(lambda x: (x > 0).mean()).values
     agg["ext_D"] = grp.apply(lambda x: (x < 0).mean()).values
 
-    # Intensive margins
-    agg["int_net_slant_norm"] = df.groupby(["paper", "year"]).apply(
-        lambda g: g.loc[g["net_slant"] != 0, "net_slant_norm"].mean()
-        if (g["net_slant"] != 0).any() else np.nan
-    ).values
-    agg["int_R_norm"] = df.groupby(["paper", "year"]).apply(
-        lambda g: g.loc[g["net_slant"] > 0, "net_slant_norm"].mean()
-        if (g["net_slant"] > 0).any() else np.nan
-    ).values
-    agg["int_D_norm"] = df.groupby(["paper", "year"]).apply(
-        lambda g: g.loc[g["net_slant"] < 0, "net_slant_norm"].mean()
-        if (g["net_slant"] < 0).any() else np.nan
-    ).values
-
     return agg
 
 
@@ -353,9 +339,6 @@ def main():
         ("ext_net",        "Net Extensive Margin (Share R - Share D)"),
         ("ext_R",          "Share R-Leaning Articles"),
         ("ext_D",          "Share D-Leaning Articles"),
-        ("int_net_slant_norm", "Net Slant (Intensive Margin)"),
-        ("int_R_norm",     "R Slant (Intensive Margin)"),
-        ("int_D_norm",     "D Slant (Intensive Margin)"),
     ]
 
     all_rows = []

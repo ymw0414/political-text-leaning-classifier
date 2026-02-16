@@ -58,8 +58,6 @@ DEPVARS = [
     ("net_slant_norm", "Net Slant (Norm.)"),
     ("ext_R", "Share R-Leaning"),
     ("ext_D", "Share D-Leaning"),
-    ("int_R_norm", "R Intensity (Norm.)"),
-    ("int_D_norm", "D Intensity (Norm.)"),
 ]
 
 

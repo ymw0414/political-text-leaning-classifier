@@ -257,21 +257,6 @@ def run_pipeline(zero_mask, label, feature_names):
         agg["ext_R"] = grp.apply(lambda x: (x > 0).mean()).values
         agg["ext_D"] = grp.apply(lambda x: (x < 0).mean()).values
 
-        # Intensive margins
-        grp2 = df.groupby(["paper", "year"])
-        agg["int_net_slant_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] != 0, "net_slant_norm"].mean()
-            if (g["net_slant"] != 0).any() else np.nan
-        ).values
-        agg["int_right_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] != 0, "right_norm"].mean()
-            if (g["net_slant"] != 0).any() else np.nan
-        ).values
-        agg["int_left_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] != 0, "left_norm"].mean()
-            if (g["net_slant"] != 0).any() else np.nan
-        ).values
-
         panel_chunks.append(agg)
         del model, X_news, slant_df, meta, df, agg
         gc.collect()

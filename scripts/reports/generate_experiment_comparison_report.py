@@ -89,9 +89,6 @@ KEY_OUTCOMES = [
     ("ext_nonzero", "Share Non-Zero"),
     ("ext_R", "Share R-Leaning"),
     ("ext_D", "Share D-Leaning"),
-    ("int_net_slant_norm", "Int. Net Slant (Norm.)"),
-    ("int_R_norm", "Int. R Intensity (Norm.)"),
-    ("int_D_norm", "Int. D Intensity (Norm.)"),
 ]
 
 # All 13 outcomes for appendix
@@ -103,12 +100,6 @@ ALL_OUTCOMES = [
     ("ext_nonzero", "Share Non-Zero"),
     ("ext_R", "Share R-Leaning"),
     ("ext_D", "Share D-Leaning"),
-    ("int_net_slant", "Int. Net Slant (Raw)"),
-    ("int_R", "Int. R Intensity (Raw)"),
-    ("int_D", "Int. D Intensity (Raw)"),
-    ("int_net_slant_norm", "Int. Net Slant (Norm.)"),
-    ("int_R_norm", "Int. R Intensity (Norm.)"),
-    ("int_D_norm", "Int. D Intensity (Norm.)"),
 ]
 
 BEST_MODEL = "exp_shvocab_cv"
@@ -116,7 +107,6 @@ BEST_MODEL = "exp_shvocab_cv"
 EVENT_STUDY_FIGS = [
     "event_study_net_slant_norm.png",
     "event_study_ext_R_vs_D.png",
-    "event_study_int_R_vs_D.png",
     "event_study_ext_R.png",
     "event_study_ext_D.png",
 ]
@@ -429,14 +419,12 @@ specifications with 95\% confidence intervals.
     # ── Section 7: Margin Decomposition ──
     # Pull actual coefficients for inline discussion
     best_did = data[BEST_MODEL].get("did")
-    ext_r_s3 = ext_d_s3 = int_ns_s3 = None
+    ext_r_s3 = ext_d_s3 = None
     if best_did is not None:
         _r = best_did[(best_did["depvar"] == "ext_R") & (best_did["spec"] == "spec3")]
         if len(_r): ext_r_s3 = _r.iloc[0]
         _d = best_did[(best_did["depvar"] == "ext_D") & (best_did["spec"] == "spec3")]
         if len(_d): ext_d_s3 = _d.iloc[0]
-        _n = best_did[(best_did["depvar"] == "int_net_slant_norm") & (best_did["spec"] == "spec3")]
-        if len(_n): int_ns_s3 = _n.iloc[0]
 
     doc.append(r"""
 \section{Margin Decomposition}
@@ -444,7 +432,7 @@ specifications with 95\% confidence intervals.
 The results from the main specification (All R/D, Uni+Bigram, GST, CV, Shared Vocab)
 reveal that the effect of NAFTA vulnerability on newspaper slant operates
 primarily through the \textbf{extensive margin}---the composition of which
-articles carry partisan content---rather than the intensive margin.
+articles carry partisan content.
 """)
 
     if ext_r_s3 is not None and ext_d_s3 is not None:
@@ -512,12 +500,6 @@ CZ level) are in parentheses.
             ("Extensive Margin", [("ext_nonzero", "Share Non-Zero"),
                                    ("ext_R", "Share R-Leaning"),
                                    ("ext_D", "Share D-Leaning")]),
-            ("Intensive Margin (Raw)", [("int_net_slant", "Net Slant"),
-                                         ("int_R", "R Intensity"),
-                                         ("int_D", "D Intensity")]),
-            ("Intensive Margin (Normalized)", [("int_net_slant_norm", "Net Slant"),
-                                                ("int_R_norm", "R Intensity"),
-                                                ("int_D_norm", "D Intensity")]),
         ]
 
         for panel_name, outcomes in panels:

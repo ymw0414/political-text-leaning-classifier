@@ -148,16 +148,6 @@ def main():
         ("ext_nonzero",          "Share Non-Zero"),
         ("ext_R",                "Share R-Leaning"),
         ("ext_D",                "Share D-Leaning"),
-        # Intensive margins (raw)
-        ("int_net_slant",        "Net Slant (Raw, Intensive)"),
-        ("int_R",                "R Intensity (Raw, Intensive)"),
-        ("int_D",                "D Intensity (Raw, Intensive)"),
-        # Intensive margins (normalized)
-        ("int_net_slant_norm",   "Net Slant (Norm, Intensive)"),
-        ("int_R_norm",           "R Intensity (Norm, Intensive)"),
-        ("int_D_norm",           "D Intensity (Norm, Intensive)"),
-        ("int_right_norm",       "R Component (Norm, Intensive)"),
-        ("int_left_norm",        "L Component (Norm, Intensive)"),
     ]
 
     all_results = []

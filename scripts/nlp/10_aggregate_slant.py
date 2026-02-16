@@ -7,7 +7,7 @@ filter, and aggregate into a newspaper-year panel dataset.
 Filtering:
   - is_news == True only (exclude death notices, classifieds, etc.)
 
-Aggregation (two-part model):
+Aggregation:
   Unconditional:
     Mean slant of ALL news articles per newspaper-year.
 
@@ -15,12 +15,6 @@ Aggregation (two-part model):
     ext_nonzero = share of articles with net_slant != 0 (any partisan bigrams)
     ext_R       = share of articles with net_slant > 0 (R-leaning bigrams)
     ext_D       = share of articles with net_slant < 0 (D-leaning bigrams)
-
-  Intensive margin (conditional on non-zero):
-    int_net_slant      = mean(net_slant | net_slant != 0)
-    int_net_slant_norm = mean(net_slant_norm | net_slant != 0)
-    int_R / int_R_norm = mean(net_slant[_norm] | net_slant > 0)
-    int_D / int_D_norm = mean(net_slant[_norm] | net_slant < 0)
 
 Grouping:
   newspaper x year (not congress) -- aligns with yearly economic and
@@ -117,44 +111,6 @@ if __name__ == "__main__":
         agg["ext_R"] = grp.apply(lambda x: (x > 0).mean()).values
         agg["ext_D"] = grp.apply(lambda x: (x < 0).mean()).values
 
-        # --- Intensive margins (conditional means) ---
-        # net_slant (raw) conditional on non-zero / positive / negative
-        agg["int_net_slant"] = grp.apply(
-            lambda x: x[x != 0].mean() if (x != 0).any() else np.nan
-        ).values
-        agg["int_R"] = grp.apply(
-            lambda x: x[x > 0].mean() if (x > 0).any() else np.nan
-        ).values
-        agg["int_D"] = grp.apply(
-            lambda x: x[x < 0].mean() if (x < 0).any() else np.nan
-        ).values
-
-        # net_slant_norm conditional on raw net_slant being non-zero / pos / neg
-        grp2 = df.groupby(["paper", "year"])
-        agg["int_net_slant_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] != 0, "net_slant_norm"].mean()
-            if (g["net_slant"] != 0).any() else np.nan
-        ).values
-        agg["int_R_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] > 0, "net_slant_norm"].mean()
-            if (g["net_slant"] > 0).any() else np.nan
-        ).values
-        agg["int_D_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] < 0, "net_slant_norm"].mean()
-            if (g["net_slant"] < 0).any() else np.nan
-        ).values
-
-        # R/L components conditional on non-zero (for clean decomposition:
-        # int_right_norm - int_left_norm = int_net_slant_norm)
-        agg["int_right_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] != 0, "right_norm"].mean()
-            if (g["net_slant"] != 0).any() else np.nan
-        ).values
-        agg["int_left_norm"] = grp2.apply(
-            lambda g: g.loc[g["net_slant"] != 0, "left_norm"].mean()
-            if (g["net_slant"] != 0).any() else np.nan
-        ).values
-
         chunks.append(agg)
 
         del meta, slant, df, agg
@@ -193,13 +149,6 @@ if __name__ == "__main__":
     print(f"    Mean ext_nonzero:      {panel['ext_nonzero'].mean():.4f}")
     print(f"    Mean ext_R:            {panel['ext_R'].mean():.4f}")
     print(f"    Mean ext_D:            {panel['ext_D'].mean():.4f}")
-
-    n_int = panel["int_net_slant"].notna().sum()
-    print(f"\n  Intensive margin (conditional on non-zero):")
-    print(f"    Paper-years with data: {n_int:,} / {len(panel):,}")
-    if n_int > 0:
-        print(f"    Mean int_net_slant_norm: {panel['int_net_slant_norm'].mean():.4f}")
-        print(f"    Std int_net_slant_norm:  {panel['int_net_slant_norm'].std():.4f}")
 
     # Per-year summary
     print(f"\n  Per-year averages:")

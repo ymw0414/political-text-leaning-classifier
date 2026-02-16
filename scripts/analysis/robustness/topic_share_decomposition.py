@@ -409,6 +409,59 @@ def main():
     res_df.to_csv(csv_path, index=False, float_format="%.6f")
     print(f"\nResults saved: {csv_path}")
 
+    # --- Topic composition DiD: does the MIX of topics change? ---
+    print("\n" + "=" * 70)
+    print("  Topic Composition DiD: Article Share by Topic")
+    print("=" * 70)
+    print("  (Outcome = share of articles mentioning each topic)")
+
+    share_results = []
+    print(f"\n  {'Topic':<30s} {'N':>6s} {'Coef':>8s} {'SE':>8s} {'p':>8s} {'Mean':>6s}")
+    print("  " + "-" * 66)
+
+    for topic in topics:
+        safe_name = topic.replace(" & ", "_").replace(" ", "_").lower()
+        n_col = f"n_{safe_name}"
+        if n_col not in merged.columns:
+            continue
+        merged[f"share_{safe_name}"] = merged[n_col] / merged["n_articles"]
+        depvar = f"share_{safe_name}"
+        subset = merged[merged[depvar].notna()].copy()
+        n_obs = len(subset)
+        if n_obs < 100:
+            continue
+        fml = f"{depvar} ~ {fml_base}"
+        try:
+            m = pf.feols(fml, data=subset, vcov={"CRV1": "cz"})
+            t = m.tidy().loc["vuln_x_post"]
+            coef, se, p = t["Estimate"], t["Std. Error"], t["Pr(>|t|)"]
+        except Exception as e:
+            print(f"  {topic:<30s}  ERROR: {e}")
+            continue
+        mean_share = merged[depvar].mean()
+        stars = "***" if p < 0.01 else "**" if p < 0.05 else "*" if p < 0.1 else ""
+        print(f"  {topic:<30s} {n_obs:>6d} {coef:>8.4f}{stars:3s} {se:>8.4f} {p:>8.4f} {mean_share:>6.1%}")
+        share_results.append({"topic": topic, "key": safe_name, "n_obs": n_obs,
+                              "coef": coef, "se": se, "p_value": p, "mean_share": mean_share})
+
+    # No-topic share
+    merged["share_no_topic"] = merged["n_no_topic"] / merged["n_articles"]
+    subset = merged[merged["share_no_topic"].notna()].copy()
+    fml = f"share_no_topic ~ {fml_base}"
+    m = pf.feols(fml, data=subset, vcov={"CRV1": "cz"})
+    t = m.tidy().loc["vuln_x_post"]
+    coef, se, p = t["Estimate"], t["Std. Error"], t["Pr(>|t|)"]
+    mean_share = merged["share_no_topic"].mean()
+    stars = "***" if p < 0.01 else "**" if p < 0.05 else "*" if p < 0.1 else ""
+    print(f"  {'No specific topic':<30s} {len(subset):>6d} {coef:>8.4f}{stars:3s} {se:>8.4f} {p:>8.4f} {mean_share:>6.1%}")
+    share_results.append({"topic": "No specific topic", "key": "no_topic", "n_obs": len(subset),
+                          "coef": coef, "se": se, "p_value": p, "mean_share": mean_share})
+
+    share_df = pd.DataFrame(share_results)
+    share_csv = TAB_DIR / "topic_composition_did.csv"
+    share_df.to_csv(share_csv, index=False, float_format="%.6f")
+    print(f"\n  Composition results saved: {share_csv}")
+
     # --- Plot ---
     plot_data = res_df[res_df["key"] != "all"].copy()
     plot_data = plot_data.sort_values("coef", ascending=True)

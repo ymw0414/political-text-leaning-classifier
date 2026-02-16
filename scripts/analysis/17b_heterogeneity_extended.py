@@ -46,9 +46,7 @@ OUTCOMES = [
     # (depvar, label, panel)
     ("ext_R",           "Share R-leaning",              "A"),
     ("ext_D",           "Share D-leaning",              "A"),
-    ("int_right_norm",  r"Republican slant ($\tilde{R}$)", "B"),
-    ("int_left_norm",   r"Democratic slant ($\tilde{L}$)", "B"),
-    ("net_slant_norm",  r"Net slant ($\tilde{S}$)",     "C"),
+    ("net_slant_norm",  r"Net slant ($\tilde{S}$)",     "B"),
 ]
 
 
