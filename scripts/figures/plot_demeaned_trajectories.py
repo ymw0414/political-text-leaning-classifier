@@ -67,7 +67,7 @@ def main():
 
     outcomes = [
         ("net_slant_norm", "Net Slant (normalized)", "Share R-Leaning"),
-        ("ext_R",          "Share R-Leaning",         "Share R-Leaning"),
+        ("share_R",          "Share R-Leaning",         "Share R-Leaning"),
     ]
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8),

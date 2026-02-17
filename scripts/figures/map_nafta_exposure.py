@@ -141,16 +141,25 @@ def get_sample_newspapers(county_gdf):
         news.loc[dups, "cx"] += rng.uniform(-15000, 15000, size=dups.sum())
         news.loc[dups, "cy"] += rng.uniform(-15000, 15000, size=dups.sum())
 
+    # CZ-level aggregation for proportional circles
+    # Use CZ dissolved centroids for bubble placement
+    cz_counts = news.groupby("cz").size().reset_index(name="n_papers_cz")
+    cz_centroids = news.groupby("cz")[["cx", "cy"]].mean().reset_index()
+    cz_bubbles = cz_centroids.merge(cz_counts, on="cz")
+
     print(f"  Sample: {n_papers} newspapers in {len(sample_czs)} CZs")
-    return sample_czs, n_papers, news[["paper", "cx", "cy"]].dropna()
+    return sample_czs, n_papers, news[["paper", "cx", "cy"]].dropna(), cz_bubbles
 
 
 def plot_map(gdf, state_gdf, col, out_path, bin_edges, bin_labels,
-             sample_czs=None, n_papers=None, news_locs=None):
+             sample_czs=None, n_papers=None, news_locs=None,
+             cz_bubbles=None, mode="border"):
     """Draw a quantile-bin choropleth with state outlines on Albers projection.
 
-    If sample_czs is provided, those CZs get a thick dark border.
-    If news_locs is provided, individual newspapers are plotted as small dots.
+    mode:
+        "clean"  — full color, no sample markers (pure vulnerability distribution)
+        "border" — full color + bold border on sample CZs (default, used in paper)
+        "sample" — faded non-sample + full color sample + newspaper dots
     """
     fig, ax = plt.subplots(1, 1, figsize=(14, 9))
 
@@ -161,28 +170,47 @@ def plot_map(gdf, state_gdf, col, out_path, bin_edges, bin_labels,
     # No-data background
     gdf[gdf[col].isna()].plot(ax=ax, color=NO_DATA_COLOR, edgecolor="none")
 
-    # Choropleth (all CZs, thin edge)
     has_data = gdf[gdf[col].notna()]
-    has_data.plot(
-        ax=ax, column=col, cmap=cmap, norm=norm,
-        edgecolor="face", linewidth=0.05,
-    )
 
-    # Highlight sample CZs with thick dark border
-    if sample_czs is not None and "cz" in gdf.columns:
+    if mode == "sample" and sample_czs is not None and "cz" in gdf.columns:
+        # Non-sample CZs: faded
+        non_sample = has_data[~has_data["cz"].isin(sample_czs)]
+        non_sample.plot(
+            ax=ax, column=col, cmap=cmap, norm=norm,
+            edgecolor="face", linewidth=0.05, alpha=0.3,
+        )
+        # Sample CZs: full color
+        sample = has_data[has_data["cz"].isin(sample_czs)]
+        sample.plot(
+            ax=ax, column=col, cmap=cmap, norm=norm,
+            edgecolor="face", linewidth=0.05, alpha=1.0,
+        )
+        # Dark border on sample CZs
         sample_gdf = gdf[gdf["cz"].isin(sample_czs)]
         sample_gdf.boundary.plot(
             ax=ax, edgecolor=SAMPLE_EDGE_COLOR,
             linewidth=SAMPLE_EDGE_LW, zorder=4,
         )
-
-    # Newspaper location dots (one per paper)
-    if news_locs is not None and len(news_locs) > 0:
-        ax.scatter(
-            news_locs["cx"], news_locs["cy"],
-            s=DOT_SIZE, c=DOT_COLOR, edgecolors=DOT_EDGE,
-            linewidths=DOT_EDGE_LW, zorder=5, clip_on=True,
+        # No additional markers — fade + border is sufficient
+    else:
+        # "clean" or "border": all CZs at full color
+        has_data.plot(
+            ax=ax, column=col, cmap=cmap, norm=norm,
+            edgecolor="face", linewidth=0.05,
         )
+        # "border" mode: add sample CZ borders + newspaper dots (original style)
+        if mode == "border" and sample_czs is not None and "cz" in gdf.columns:
+            sample_gdf = gdf[gdf["cz"].isin(sample_czs)]
+            sample_gdf.boundary.plot(
+                ax=ax, edgecolor=SAMPLE_EDGE_COLOR,
+                linewidth=SAMPLE_EDGE_LW, zorder=4,
+            )
+            if news_locs is not None and len(news_locs) > 0:
+                ax.scatter(
+                    news_locs["cx"], news_locs["cy"],
+                    s=DOT_SIZE, c=DOT_COLOR, edgecolors=DOT_EDGE,
+                    linewidths=DOT_EDGE_LW, zorder=5, clip_on=True,
+                )
 
     # State outlines
     state_gdf.boundary.plot(ax=ax, edgecolor="#555555", linewidth=0.5)
@@ -192,22 +220,24 @@ def plot_map(gdf, state_gdf, col, out_path, bin_edges, bin_labels,
                for l, c in zip(bin_labels, BIN_COLORS[:len(bin_labels)])]
     patches.append(mpatches.Patch(facecolor=NO_DATA_COLOR, edgecolor="#aaaaaa",
                                   linewidth=0.4, label="No data"))
-    if sample_czs is not None:
-        # Border legend entry
+    if mode == "border" and sample_czs is not None:
         patches.append(mpatches.Patch(facecolor="none", edgecolor=SAMPLE_EDGE_COLOR,
                                       linewidth=1.6,
                                       label=f"Sample CZs ($N = {len(sample_czs)}$)"))
-        # Dot legend entry
         if n_papers:
             patches.append(Line2D([0], [0], marker="o", color="none",
                                   markerfacecolor=DOT_COLOR, markeredgecolor=DOT_EDGE,
-                                  markeredgewidth=DOT_EDGE_LW, markersize=5,
+                                  markeredgewidth=DOT_EDGE_LW, markersize=7,
                                   label=f"Newspaper ($N = {n_papers}$)"))
+    if mode == "sample" and sample_czs is not None:
+        patches.append(mpatches.Patch(facecolor="none", edgecolor=SAMPLE_EDGE_COLOR,
+                                      linewidth=1.6,
+                                      label=f"Sample: {len(sample_czs)} CZs, {n_papers} newspapers"))
     leg = ax.legend(
-        handles=patches, loc="lower left", fontsize=9,
+        handles=patches, loc="lower left", fontsize=11,
         frameon=True, framealpha=0.95, edgecolor="#999999",
-        handlelength=1.2, handleheight=1.0, borderpad=0.8,
-        title="Vulnerability (sextile)", title_fontsize=10,
+        handlelength=1.4, handleheight=1.1, borderpad=0.8,
+        title="Vulnerability (sextile)", title_fontsize=12,
     )
     leg.get_frame().set_linewidth(0.5)
 
@@ -269,8 +299,9 @@ def main():
     print(f"  Bin edges: {[f'{e:.4f}' for e in cz_edges]}")
 
     # Load sample CZs and newspaper locations
-    sample_czs, n_papers, news_locs = get_sample_newspapers(counties)
+    sample_czs, n_papers, news_locs, cz_bubbles = get_sample_newspapers(counties)
 
+    # Paper version: full color + borders + dots (original)
     plot_map(
         cz_merged, states, cz_col,
         OUT_DIR / "nafta_exposure_cz.png",
@@ -278,6 +309,26 @@ def main():
         sample_czs=sample_czs,
         n_papers=n_papers,
         news_locs=news_locs,
+        mode="border",
+    )
+
+    # Slides version 1: clean (no sample markers)
+    plot_map(
+        cz_merged, states, cz_col,
+        OUT_DIR / "nafta_exposure_cz_clean.png",
+        cz_edges, cz_labels,
+        mode="clean",
+    )
+
+    # Slides version 2: faded non-sample + proportional circles
+    plot_map(
+        cz_merged, states, cz_col,
+        OUT_DIR / "nafta_exposure_cz_sample.png",
+        cz_edges, cz_labels,
+        sample_czs=sample_czs,
+        n_papers=n_papers,
+        cz_bubbles=cz_bubbles,
+        mode="sample",
     )
 
     print("Done.")

@@ -10,14 +10,14 @@ Two specifications (both with paper FE + year FE + division×year FE, cluster CZ
 
 Outcomes:
   Unconditional: net_slant_norm, politicization_norm
-  Extensive margin: ext_nonzero, ext_R, ext_D
+  Extensive margin: share_nonzero, share_R, share_D
 
 Inputs:
   - data/processed/panel/14_regression_panel.parquet
 
 Outputs:
   - output/figures/event_study_{depvar}.png   (one per outcome)
-  - output/figures/event_study_ext_R_vs_D.png (combined extensive)
+  - output/figures/event_study_share_R_vs_D.png (combined extensive)
   - output/figures/event_study_int_R_vs_D.png (combined intensive)
   - output/tables/event_study_coefficients.csv
 """
@@ -237,8 +237,8 @@ def main():
     print(f"  {len(df):,} obs, {df['paper_id'].nunique()} papers, "
           f"{df['cz'].nunique()} CZs, {df['division'].nunique()} divisions")
 
-    # Derived variable: net extensive margin (ext_R - ext_D)
-    df["ext_net"] = df["ext_R"] - df["ext_D"]
+    # Derived variable: net extensive margin (share_R - share_D)
+    df["ext_net"] = df["share_R"] - df["share_D"]
 
     outcomes = [
         # Unconditional
@@ -248,9 +248,9 @@ def main():
         ("left_norm",            "Left Intensity (Normalized)"),
         # Extensive margins
         ("ext_net",              "Net Extensive Margin (Share R $-$ Share D)"),
-        ("ext_nonzero",          "Share Non-Zero Articles"),
-        ("ext_R",                "Share R-Leaning Articles"),
-        ("ext_D",                "Share D-Leaning Articles"),
+        ("share_nonzero",          "Share Non-Zero Articles"),
+        ("share_R",                "Share R-Leaning Articles"),
+        ("share_D",                "Share D-Leaning Articles"),
     ]
 
     all_results = {}  # depvar -> {baseline: df, controls: df}
@@ -285,10 +285,10 @@ def main():
     )
     # Extensive: R vs D share
     plot_combined_intensity(
-        all_results["ext_R"]["controls"],
-        all_results["ext_D"]["controls"],
+        all_results["share_R"]["controls"],
+        all_results["share_D"]["controls"],
         "R-Leaning vs. D-Leaning Article Share (with controls)",
-        FIG_DIR / "event_study_ext_R_vs_D.png",
+        FIG_DIR / "event_study_share_R_vs_D.png",
         label_right="Share R-leaning",
         label_left="Share D-leaning",
     )

@@ -68,29 +68,29 @@ def main():
 
     # --- ICC ---
     icc_slant = compute_icc(panel, "paper", "net_slant_norm")
-    icc_shareR = compute_icc(panel, "paper", "ext_R")
+    icc_shareR = compute_icc(panel, "paper", "share_R")
     print(f"\n  ICC(1) net_slant_norm: {icc_slant:.3f}")
-    print(f"  ICC(1) ext_R:          {icc_shareR:.3f}")
+    print(f"  ICC(1) share_R:          {icc_shareR:.3f}")
 
     # --- Lag-1 autocorrelation (observation-level) ---
     panel_sorted = panel.sort_values(["paper", "year"])
     panel_sorted["slant_lag1"] = panel_sorted.groupby("paper")["net_slant_norm"].shift(1)
-    panel_sorted["shareR_lag1"] = panel_sorted.groupby("paper")["ext_R"].shift(1)
+    panel_sorted["shareR_lag1"] = panel_sorted.groupby("paper")["share_R"].shift(1)
     auto = panel_sorted.dropna(subset=["slant_lag1"])
     r_auto_slant, p_auto_slant = stats.pearsonr(auto["net_slant_norm"], auto["slant_lag1"])
-    r_auto_shareR, p_auto_shareR = stats.pearsonr(auto["ext_R"], auto["shareR_lag1"])
+    r_auto_shareR, p_auto_shareR = stats.pearsonr(auto["share_R"], auto["shareR_lag1"])
     print(f"\n  Lag-1 autocorrelation (slant):  {r_auto_slant:.3f} (p={p_auto_slant:.4f})")
     print(f"  Lag-1 autocorrelation (shareR): {r_auto_shareR:.3f} (p={p_auto_shareR:.4f})")
 
     # --- Split-half: odd years vs even years ---
     odd = panel[panel["year"] % 2 == 1].groupby("paper").agg(
         slant_odd=("net_slant_norm", "mean"),
-        shareR_odd=("ext_R", "mean"),
+        shareR_odd=("share_R", "mean"),
         n_odd=("year", "count"),
     ).reset_index()
     even = panel[panel["year"] % 2 == 0].groupby("paper").agg(
         slant_even=("net_slant_norm", "mean"),
-        shareR_even=("ext_R", "mean"),
+        shareR_even=("share_R", "mean"),
         n_even=("year", "count"),
     ).reset_index()
     split = odd.merge(even, on="paper")
@@ -108,7 +108,7 @@ def main():
     # Panel (a): Lag-1 autocorrelation scatter — share R
     ax = axes[0]
     x_a = auto["shareR_lag1"].values
-    y_a = auto["ext_R"].values
+    y_a = auto["share_R"].values
     ax.scatter(x_a, y_a, s=18, color="#888888", alpha=0.45,
                edgecolors="white", linewidth=0.3, zorder=3)
 
@@ -184,7 +184,7 @@ def main():
     print("STABILITY SUMMARY")
     print(f"{'='*60}")
     print(f"  ICC(1) net_slant_norm:            {icc_slant:.3f}")
-    print(f"  ICC(1) ext_R:                     {icc_shareR:.3f}")
+    print(f"  ICC(1) share_R:                     {icc_shareR:.3f}")
     print(f"  Lag-1 autocorr (slant):           {r_auto_slant:.3f}")
     print(f"  Lag-1 autocorr (shareR):          {r_auto_shareR:.3f}")
     print(f"  Split-half r (slant, odd/even):   {r_split_slant:.3f}")

@@ -596,9 +596,9 @@ def generate_report():
     lines.append(r"\addlinespace[3pt]")
 
     outcomes_B = [
-        ("ext_R", "Share R-leaning"),
-        ("ext_D", "Share D-leaning"),
-        ("ext_nonzero", "Share non-zero"),
+        ("share_R", "Share R-leaning"),
+        ("share_D", "Share D-leaning"),
+        ("share_nonzero", "Share non-zero"),
     ]
     for depvar, label in outcomes_B:
         row = did_row(depvar, label, logit_did, poiss_did)
@@ -634,7 +634,7 @@ def generate_report():
 
     fig_pairs = [
         ("event_study_net_slant_norm.png", "Net Slant (Normalized)"),
-        ("event_study_ext_R_vs_D.png", "Extensive Margin: Share R vs.~D"),
+        ("event_study_share_R_vs_D.png", "Extensive Margin: Share R vs.~D"),
         ("event_study_int_R_vs_D.png", "Intensive Margin: R vs.~D"),
         ("event_study_politicization_norm.png", "Politicization (Normalized)"),
     ]

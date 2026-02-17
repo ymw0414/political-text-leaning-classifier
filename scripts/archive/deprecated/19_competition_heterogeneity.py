@@ -121,8 +121,8 @@ def part1_interaction(df, years, median_dailies):
         ("right_norm",           "R Intensity (Uncond)"),
         ("left_norm",            "L Intensity (Uncond)"),
         ("politicization_norm",  "Politicization"),
-        ("ext_R",                "Share R-Leaning"),
-        ("ext_D",                "Share D-Leaning"),
+        ("share_R",                "Share R-Leaning"),
+        ("share_D",                "Share D-Leaning"),
         ("int_R_norm",           "R Intensity (Intens)"),
         ("int_D_norm",           "D Intensity (Intens)"),
     ]
@@ -186,8 +186,8 @@ def part2_split_sample(df, years, median_dailies):
         ("right_norm",           "R Intensity (Uncond)"),
         ("left_norm",            "L Intensity (Uncond)"),
         ("politicization_norm",  "Politicization"),
-        ("ext_R",                "Share R-Leaning"),
-        ("ext_D",                "Share D-Leaning"),
+        ("share_R",                "Share R-Leaning"),
+        ("share_D",                "Share D-Leaning"),
     ]
 
     results = []
@@ -233,8 +233,8 @@ def part3_continuous(df, years):
         ("right_norm",           "R Intensity (Uncond)"),
         ("left_norm",            "L Intensity (Uncond)"),
         ("politicization_norm",  "Politicization"),
-        ("ext_R",                "Share R-Leaning"),
-        ("ext_D",                "Share D-Leaning"),
+        ("share_R",                "Share R-Leaning"),
+        ("share_D",                "Share D-Leaning"),
     ]
 
     print(f"\n  log(n_dailies): mean={df['log_n_dailies'].mean():.2f}, "

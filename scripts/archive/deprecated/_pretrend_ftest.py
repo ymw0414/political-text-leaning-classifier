@@ -40,7 +40,7 @@ def main():
     df["state_fips"] = (df["fips"] // 1000).astype(int)
     df["division"] = df["state_fips"].map(STATE_TO_DIVISION)
     df["paper_id"] = df["paper"].astype("category").cat.codes
-    df["ext_net"] = df["ext_R"] - df["ext_D"]
+    df["ext_net"] = df["share_R"] - df["share_D"]
 
     years = sorted(df["year"].unique())
     base_yr = years[0]
@@ -66,8 +66,8 @@ def main():
 
     outcomes = [
         ("net_slant_norm", "Net Slant (Normalized)"),
-        ("ext_R", "Share R-Leaning"),
-        ("ext_D", "Share D-Leaning"),
+        ("share_R", "Share R-Leaning"),
+        ("share_D", "Share D-Leaning"),
         ("ext_net", "Net Extensive Margin"),
         ("right_norm", "R Component (Unconditional)"),
         ("left_norm", "L Component (Unconditional)"),

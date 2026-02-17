@@ -73,8 +73,8 @@ def main():
         ("right_norm",       "Republican slant (R~)"),
         ("left_norm",        "Democratic slant (L~)"),
         # Panel B: Extensive
-        ("ext_R",            "Share R-leaning"),
-        ("ext_D",            "Share D-leaning"),
+        ("share_R",            "Share R-leaning"),
+        ("share_D",            "Share D-leaning"),
         # Panel C: Intensive
         ("int_right_norm",   "Republican slant (R~, intensive)"),
         ("int_left_norm",    "Democratic slant (L~, intensive)"),

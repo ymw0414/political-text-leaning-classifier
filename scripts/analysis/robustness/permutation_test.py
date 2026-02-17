@@ -114,8 +114,8 @@ def main():
 
     outcomes = [
         ("net_slant_norm", "Net Slant (Norm)"),
-        ("ext_R", "Share R-Leaning"),
-        ("ext_D", "Share D-Leaning"),
+        ("share_R", "Share R-Leaning"),
+        ("share_D", "Share D-Leaning"),
         ("right_norm", "R Component"),
         ("left_norm", "L Component"),
     ]
@@ -248,7 +248,7 @@ def main():
     print(f"\nResults saved: {csv_path}")
 
     # --- Plot (Share R-Leaning only) ---
-    plot_var, plot_label = "ext_R", "Share R-Leaning"
+    plot_var, plot_label = "share_R", "Share R-Leaning"
     perm_arr = perm_coefs[plot_var]
     perm_arr = perm_arr[~np.isnan(perm_arr)]
     act = actual[plot_var]

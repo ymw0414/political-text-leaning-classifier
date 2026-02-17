@@ -60,8 +60,11 @@ def aggregate_by_threshold():
             columns=["prob_R"])
         meta = pd.read_parquet(
             META_DIR / f"04_newspaper_labeled_cong_{cong}.parquet",
-            columns=["paper", "year"])
+            columns=["paper", "year", "is_news"])
         df = pd.concat([meta, slant], axis=1)
+
+        # Filter to news articles only (consistent with step 10)
+        df = df[df["is_news"]].copy()
 
         for (paper, year), g in df.groupby(["paper", "year"]):
             n = len(g)
@@ -74,7 +77,7 @@ def aggregate_by_threshold():
                 row[f"share_D_{t}"] = n_D / n
                 row[f"r_ratio_{t}"] = n_R / (n_R + n_D) if (n_R + n_D) > 0 else np.nan
             rows.append(row)
-        print(f"  Congress {cong} done ({len(df):,} articles)")
+        print(f"  Congress {cong} done ({len(df):,} news articles)")
 
     return pd.DataFrame(rows)
 

@@ -276,7 +276,7 @@ def main():
         print(f"\nComparison saved -> {summary_path}")
 
         # Print summary for key outcomes
-        key_outcomes = ["net_slant_norm", "ext_nonzero", "ext_R", "ext_D"]
+        key_outcomes = ["net_slant_norm", "share_nonzero", "share_R", "share_D"]
         for outcome in key_outcomes:
             sub = all_did[(all_did["depvar"] == outcome) & (all_did["spec"] == "spec1")]
             if len(sub) > 0:

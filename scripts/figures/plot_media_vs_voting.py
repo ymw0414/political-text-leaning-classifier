@@ -114,17 +114,17 @@ def load_media_change():
     # Newspaper-level change
     nw = []
     for paper, pdata in panel.groupby("paper"):
-        pre = pdata.loc[pdata["post"] == 0, "ext_R"].mean()
-        post = pdata.loc[pdata["post"] == 1, "ext_R"].mean()
+        pre = pdata.loc[pdata["post"] == 0, "share_R"].mean()
+        post = pdata.loc[pdata["post"] == 1, "share_R"].mean()
         cz = pdata["cz"].iloc[0]
         div = pdata["division"].iloc[0]
         nw.append({"paper": paper, "cz": cz, "division": div,
-                    "d_ext_R": post - pre})
+                    "d_share_R": post - pre})
     nw_df = pd.DataFrame(nw)
 
     # CZ-level average (across newspapers in the CZ)
     cz_media = (nw_df.groupby("cz")
-                .agg(d_ext_R=("d_ext_R", "mean"),
+                .agg(d_share_R=("d_share_R", "mean"),
                      division=("division", "first"),
                      n_papers=("paper", "count"))
                 .reset_index())
@@ -146,20 +146,20 @@ def main():
     print(f"\n  Merged: {len(df)} CZs")
 
     # 3. Residualize by division FE
-    for col in ["d_ext_R", "d_rep_share"]:
+    for col in ["d_share_R", "d_rep_share"]:
         div_means = df.groupby("division")[col].transform("mean")
         df[f"r_{col}"] = df[col] - div_means
 
     # 4. Correlation
-    r, p = stats.pearsonr(df["r_d_ext_R"], df["r_d_rep_share"])
+    r, p = stats.pearsonr(df["r_d_share_R"], df["r_d_rep_share"])
     slope, intercept, _, p_ols, se = stats.linregress(
-        df["r_d_ext_R"], df["r_d_rep_share"])
+        df["r_d_share_R"], df["r_d_rep_share"])
     print(f"\n  Correlation (division-residualized):")
     print(f"    r = {r:.3f}, p = {p:.4f}")
     print(f"    slope = {slope:.3f} (SE = {se:.3f}), p = {p_ols:.4f}")
 
     # 5. Scatter plot
-    x = df["r_d_ext_R"].values
+    x = df["r_d_share_R"].values
     y = df["r_d_rep_share"].values
 
     fig, ax = plt.subplots(figsize=(6, 5))

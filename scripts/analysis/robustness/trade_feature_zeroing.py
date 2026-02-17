@@ -241,6 +241,7 @@ def run_pipeline(zero_mask, label, feature_names):
 
         assert len(meta) == len(slant_df), f"Cong {cong_curr}: meta/slant mismatch"
         df = pd.concat([meta, slant_df], axis=1)
+
         df = df[df["is_news"]].copy()
 
         # Aggregate
@@ -253,9 +254,9 @@ def run_pipeline(zero_mask, label, feature_names):
 
         # Extensive margins
         grp = df.groupby(["paper", "year"])["net_slant"]
-        agg["ext_nonzero"] = grp.apply(lambda x: (x != 0).mean()).values
-        agg["ext_R"] = grp.apply(lambda x: (x > 0).mean()).values
-        agg["ext_D"] = grp.apply(lambda x: (x < 0).mean()).values
+        agg["share_nonzero"] = grp.apply(lambda x: (x != 0).mean()).values
+        agg["share_R"] = grp.apply(lambda x: (x > 0).mean()).values
+        agg["share_D"] = grp.apply(lambda x: (x < 0).mean()).values
 
         panel_chunks.append(agg)
         del model, X_news, slant_df, meta, df, agg
@@ -352,8 +353,8 @@ def main():
 
     outcomes = [
         ("net_slant_norm", "Net Slant"),
-        ("ext_R", "Share R-Leaning"),
-        ("ext_D", "Share D-Leaning"),
+        ("share_R", "Share R-Leaning"),
+        ("share_D", "Share D-Leaning"),
         ("right_norm", "R Component"),
         ("left_norm", "L Component"),
     ]

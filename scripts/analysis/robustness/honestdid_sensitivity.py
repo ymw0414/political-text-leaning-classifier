@@ -435,13 +435,13 @@ def main():
 
     print("Loading panel ...")
     df, years = load_panel()
-    df["ext_net"] = df["ext_R"] - df["ext_D"]
+    df["ext_net"] = df["share_R"] - df["share_D"]
     print(f"  {len(df):,} obs, {df['paper_id'].nunique()} papers, {df['cz'].nunique()} CZs")
 
     outcomes = [
         ("net_slant_norm",  "Net Slant"),
-        ("ext_R",           "Share R-Leaning"),
-        ("ext_D",           "Share D-Leaning"),
+        ("share_R",           "Share R-Leaning"),
+        ("share_D",           "Share D-Leaning"),
         ("right_norm",      "R Component"),
         ("left_norm",       "L Component"),
     ]

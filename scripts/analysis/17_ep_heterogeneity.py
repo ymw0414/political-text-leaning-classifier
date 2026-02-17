@@ -142,8 +142,8 @@ def part2_ad_by_initial_lean(df):
     import statsmodels.api as sm
 
     # Compute pre-NAFTA mean Share R-leaning per newspaper
-    pre = df[df['year'] < NAFTA_YEAR].groupby('paper')['ext_R'].mean()
-    pre.name = 'pre_nafta_ext_R'
+    pre = df[df['year'] < NAFTA_YEAR].groupby('paper')['share_R'].mean()
+    pre.name = 'pre_nafta_share_R'
     median_lean = pre.median()
     print(f"\n  Pre-NAFTA Share R-leaning: median = {median_lean:.3f}")
     print(f"  D-leaning papers (below median): {(pre < median_lean).sum()}")
@@ -157,7 +157,7 @@ def part2_ad_by_initial_lean(df):
         ['vulnerability1990_scaled', 'cz']
     ].reset_index()
     paper_chars = paper_chars.merge(pre.reset_index(), on='paper', how='left')
-    paper_chars['initially_D'] = (paper_chars['pre_nafta_ext_R'] < median_lean).astype(int)
+    paper_chars['initially_D'] = (paper_chars['pre_nafta_share_R'] < median_lean).astype(int)
 
     # Pivot ad prices wide
     wide = ep.pivot(index='paper', columns='ep_year', values='ep_adprice').reset_index()

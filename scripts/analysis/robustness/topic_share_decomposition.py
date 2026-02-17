@@ -2,7 +2,7 @@
 Topic-level share decomposition.
 
 Classify articles by topic using keyword matching on features,
-then compute topic-specific share of R-leaning articles (ext_R) and run DiD.
+then compute topic-specific share of R-leaning articles (share_R) and run DiD.
 
 Key question: Is the increase in R-leaning share uniform across topics,
 or concentrated in specific domains (e.g., trade)?
@@ -10,8 +10,8 @@ or concentrated in specific domains (e.g., trade)?
 Approach:
 1. Load vocabulary and classify features into 10 topic categories
 2. For each article, check which topic features are present (non-zero frequency)
-3. Compute topic-specific ext_R at newspaper-year level
-4. Run DiD on each topic's ext_R
+3. Compute topic-specific share_R at newspaper-year level
+4. Run DiD on each topic's share_R
 
 Outputs:
   - output/tables/topic_share_decomposition.csv
@@ -269,10 +269,10 @@ def main():
         agg = grp.agg(
             n_articles=("is_R", "count"),
             n_R=("is_R", "sum"),
-            ext_R=("is_R", "mean"),
+            share_R=("is_R", "mean"),
         ).reset_index()
 
-        # Topic-specific ext_R
+        # Topic-specific share_R
         for topic in topics:
             safe_name = topic.replace(" & ", "_").replace(" ", "_").lower()
             topic_col = f"topic_{safe_name}"
@@ -283,14 +283,14 @@ def main():
             # Number of R-leaning articles mentioning this topic
             agg[f"nR_{safe_name}"] = grp[r_col].sum().values
             # Share R among articles mentioning this topic
-            agg[f"ext_R_{safe_name}"] = (
+            agg[f"share_R_{safe_name}"] = (
                 agg[f"nR_{safe_name}"] / agg[f"n_{safe_name}"]
             ).replace([np.inf, -np.inf], np.nan)
 
         # Non-topic articles
         agg["n_no_topic"] = grp["no_topic"].sum().values
         agg["nR_no_topic"] = grp["R_in_no_topic"].sum().values
-        agg["ext_R_no_topic"] = (
+        agg["share_R_no_topic"] = (
             agg["nR_no_topic"] / agg["n_no_topic"]
         ).replace([np.inf, -np.inf], np.nan)
 
@@ -345,18 +345,18 @@ def main():
     manu_str = " + ".join([f"manu_{yr}" for yr in years if yr != base_yr])
     china_str = " + ".join([f"china_{yr}" for yr in years if yr != base_yr])
 
-    # --- Run DiD on each topic's ext_R ---
+    # --- Run DiD on each topic's share_R ---
     print("\nRunning DiD regressions ...")
     fml_base = "vuln_x_post + {china} + {manu} | paper_id + year + division^year".format(
         china=china_str, manu=manu_str
     )
 
     # Build list of outcomes
-    outcome_list = [("ext_R", "All articles", "all")]
+    outcome_list = [("share_R", "All articles", "all")]
     for topic in topics:
         safe_name = topic.replace(" & ", "_").replace(" ", "_").lower()
-        outcome_list.append((f"ext_R_{safe_name}", topic, safe_name))
-    outcome_list.append(("ext_R_no_topic", "No specific topic", "no_topic"))
+        outcome_list.append((f"share_R_{safe_name}", topic, safe_name))
+    outcome_list.append(("share_R_no_topic", "No specific topic", "no_topic"))
 
     results = []
     print(f"\n  {'Outcome':<30s} {'N':>6s} {'Coef':>8s} {'SE':>8s} {'p':>8s} {'Share':>6s}")

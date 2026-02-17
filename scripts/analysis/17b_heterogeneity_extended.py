@@ -2,9 +2,10 @@
 17b_heterogeneity_extended.py
 
 Additional heterogeneity analyses:
-  1. Pre-NAFTA slant (initially R-leaning vs D-leaning papers)
-  2. Income (income1989)
-  3. Newspaper size (mean pre-NAFTA article count)
+  1. Education (bachelor_higher1990, share with bachelor's+)
+  2. Pre-NAFTA slant (pre-NAFTA mean share_R, initially R- vs D-leaning)
+  3. Income (income1989)
+  4. Newspaper size (mean pre-NAFTA article count)
 
 Each uses the same approach as the education heterogeneity:
   - Median split: vuln_x_post + vuln_x_post × HighX
@@ -44,8 +45,8 @@ STATE_TO_DIVISION = {
 
 OUTCOMES = [
     # (depvar, label, panel)
-    ("ext_R",           "Share R-leaning",              "A"),
-    ("ext_D",           "Share D-leaning",              "A"),
+    ("share_R",           "Share R-leaning",              "A"),
+    ("share_D",           "Share D-leaning",              "A"),
     ("net_slant_norm",  r"Net slant ($\tilde{S}$)",     "B"),
 ]
 
@@ -114,7 +115,7 @@ def run_heterogeneity(df, years, het_var, het_label, high_label, continuous_labe
     # Create variables
     df["_high"] = (df[het_var] > median_val).astype(int)
     df["_vuln_x_post_x_high"] = df["vuln_x_post"] * df["_high"]
-    df["_het_std"] = (df[het_var] - df[het_var].mean()) / df[het_var].std()
+    df["_het_std"] = (df[het_var] - paper_level.mean()) / sd_val
     df["_vuln_x_post_x_std"] = df["vuln_x_post"] * df["_het_std"]
 
     results = []
@@ -174,21 +175,27 @@ def main():
     print(f"  {len(df):,} obs, {df['paper_id'].nunique()} papers, "
           f"{df['cz'].nunique()} CZs")
 
-    # ---- 1. Pre-NAFTA slant ----
-    pre = df[df["year"] < NAFTA_YEAR].groupby("paper")["net_slant_norm"].mean()
+    # ---- 1. Education ----
+    res_educ, med_ed, sd_ed, n_lo_ed, n_hi_ed = run_heterogeneity(
+        df, years, "bachelor_higher1990",
+        "Bachelor's or Higher (share with BA+, 1990)",
+        "HighEduc (>median)", "Bachelor_std")
+
+    # ---- 2. Pre-NAFTA slant ----
+    pre = df[df["year"] < NAFTA_YEAR].groupby("paper")["share_R"].mean()
     df["pre_slant"] = df["paper"].map(pre)
     res_slant, med_sl, sd_sl, n_lo_sl, n_hi_sl = run_heterogeneity(
         df, years, "pre_slant",
-        "Pre-NAFTA Slant (mean net_slant_norm, 1987-1993)",
+        "Pre-NAFTA Slant (mean share_R, 1987-1993)",
         "HighSlant (>median)", "PreSlant_std")
 
-    # ---- 2. Income ----
+    # ---- 3. Income ----
     res_income, med_inc, sd_inc, n_lo_inc, n_hi_inc = run_heterogeneity(
         df, years, "income1989",
         "Per-Capita Income (1989)",
         "HighIncome (>median)", "Income_std")
 
-    # ---- 3. Newspaper size ----
+    # ---- 4. Newspaper size ----
     pre_size = df[df["year"] < NAFTA_YEAR].groupby("paper")["n_articles"].mean()
     df["pre_size"] = df["paper"].map(pre_size)
     res_size, med_sz, sd_sz, n_lo_sz, n_hi_sz = run_heterogeneity(
@@ -198,6 +205,7 @@ def main():
 
     # Save all results
     all_res = pd.concat([
+        res_educ.assign(het="education"),
         res_slant.assign(het="pre_slant"),
         res_income.assign(het="income"),
         res_size.assign(het="size"),

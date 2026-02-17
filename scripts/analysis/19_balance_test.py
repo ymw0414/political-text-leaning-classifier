@@ -35,7 +35,7 @@ def main():
     # --- Pre-NAFTA (1987-1993) averages collapsed to CZ ---
     pre = panel[panel["year"] <= 1993].copy()
     pre_cz = pre.groupby("cz").agg(
-        pre_ext_R=("ext_R", "mean"),
+        pre_share_R=("share_R", "mean"),
     ).reset_index()
 
     # --- CZ-level cross-section (time-invariant) ---
@@ -58,7 +58,7 @@ def main():
 
     # Variables to test
     variables = [
-        ("pre_ext_R", "Share R-leaning, 1987--1993"),
+        ("pre_share_R", "Share R-leaning, 1987--1993"),
         ("manushare1990", "Manuf.\\ empl.\\ share, 1990"),
         ("less_highschool1990", "Share less than high school, 1990"),
         ("bachelor_higher1990", "Share bachelor's or higher, 1990"),
@@ -97,7 +97,7 @@ def main():
     # --- Joint F-test: regress vulnerability on all pre-treatment covariates ---
     from sklearn.linear_model import LinearRegression
 
-    X_cols = ["pre_ext_R",
+    X_cols = ["pre_share_R",
               "manushare1990",
               "less_highschool1990", "bachelor_higher1990",
               "income1989", "pop1990_total", "china_shock"]

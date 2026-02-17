@@ -12,9 +12,9 @@ Aggregation:
     Mean slant of ALL news articles per newspaper-year.
 
   Extensive margin:
-    ext_nonzero = share of articles with net_slant != 0 (any partisan bigrams)
-    ext_R       = share of articles with net_slant > 0 (R-leaning bigrams)
-    ext_D       = share of articles with net_slant < 0 (D-leaning bigrams)
+    share_nonzero = share of articles with net_slant != 0 (any partisan bigrams)
+    share_R       = share of articles with net_slant > 0 (R-leaning bigrams)
+    share_D       = share of articles with net_slant < 0 (D-leaning bigrams)
 
 Grouping:
   newspaper x year (not congress) -- aligns with yearly economic and
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         df = pd.concat([meta, slant], axis=1)
         n_total = len(df)
 
-        # Filter: news only
+        # Filter: is_news only
         df = df[df["is_news"]].copy()
         n_news = len(df)
 
@@ -92,8 +92,8 @@ if __name__ == "__main__":
         n_nonzero = (df["net_slant"] != 0).sum()
         pct_nonzero = n_nonzero / n_news * 100 if n_news > 0 else 0
 
-        print(f"  Congress {cong}: {n_total:,} total -> {n_news:,} news -> "
-              f"{n_nonzero:,} non-zero ({pct_nonzero:.1f}%)")
+        print(f"  Congress {cong}: {n_total:,} total -> {n_news:,} news"
+              f" -> {n_nonzero:,} non-zero ({pct_nonzero:.1f}%)")
 
         # --- Unconditional means (all articles) ---
         agg = (
@@ -107,9 +107,9 @@ if __name__ == "__main__":
 
         # --- Extensive margins ---
         grp = df.groupby(["paper", "year"])["net_slant"]
-        agg["ext_nonzero"] = grp.apply(lambda x: (x != 0).mean()).values
-        agg["ext_R"] = grp.apply(lambda x: (x > 0).mean()).values
-        agg["ext_D"] = grp.apply(lambda x: (x < 0).mean()).values
+        agg["share_nonzero"] = grp.apply(lambda x: (x != 0).mean()).values
+        agg["share_R"] = grp.apply(lambda x: (x > 0).mean()).values
+        agg["share_D"] = grp.apply(lambda x: (x < 0).mean()).values
 
         chunks.append(agg)
 
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     print(f"    Std net_slant_norm:    {panel['net_slant_norm'].std():.4f}")
 
     print(f"\n  Extensive margin:")
-    print(f"    Mean ext_nonzero:      {panel['ext_nonzero'].mean():.4f}")
-    print(f"    Mean ext_R:            {panel['ext_R'].mean():.4f}")
-    print(f"    Mean ext_D:            {panel['ext_D'].mean():.4f}")
+    print(f"    Mean share_nonzero:      {panel['share_nonzero'].mean():.4f}")
+    print(f"    Mean share_R:            {panel['share_R'].mean():.4f}")
+    print(f"    Mean share_D:            {panel['share_D'].mean():.4f}")
 
     # Per-year summary
     print(f"\n  Per-year averages:")
@@ -156,17 +156,17 @@ if __name__ == "__main__":
         papers=("paper", "nunique"),
         articles=("n_articles", "sum"),
         net_slant_norm=("net_slant_norm", "mean"),
-        ext_nonzero=("ext_nonzero", "mean"),
-        ext_R=("ext_R", "mean"),
-        ext_D=("ext_D", "mean"),
+        share_nonzero=("share_nonzero", "mean"),
+        share_R=("share_R", "mean"),
+        share_D=("share_D", "mean"),
     )
     for year, row in yearly.iterrows():
         print(f"    {year}: {row['papers']:>3} papers  "
               f"{row['articles']:>9,.0f} articles  "
               f"slant_norm={row['net_slant_norm']:>7.3f}  "
-              f"ext_nz={row['ext_nonzero']:.3f}  "
-              f"ext_R={row['ext_R']:.3f}  "
-              f"ext_D={row['ext_D']:.3f}")
+              f"ext_nz={row['share_nonzero']:.3f}  "
+              f"share_R={row['share_R']:.3f}  "
+              f"share_D={row['share_D']:.3f}")
 
     print(f"\n  Total time: {elapsed:.1f}s")
     print(f"  Saved to -> {out_path}")

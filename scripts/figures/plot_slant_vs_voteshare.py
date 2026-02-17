@@ -88,7 +88,7 @@ def main():
     # 2. Newspaper-level average slant (full sample)
     paper_avg = (panel.groupby(["paper", "fips"])
                  .agg(avg_slant=("net_slant_norm", "mean"),
-                      avg_share_R=("ext_R", "mean"))
+                      avg_share_R=("share_R", "mean"))
                  .reset_index())
 
     # 3. Compare pre-NAFTA only vs all elections

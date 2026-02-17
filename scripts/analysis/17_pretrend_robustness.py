@@ -56,8 +56,8 @@ STATE_TO_DIVISION = {
 
 DEPVARS = [
     ("net_slant_norm", "Net Slant (Norm.)"),
-    ("ext_R", "Share R-Leaning"),
-    ("ext_D", "Share D-Leaning"),
+    ("share_R", "Share R-Leaning"),
+    ("share_D", "Share D-Leaning"),
 ]
 
 

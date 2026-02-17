@@ -86,9 +86,9 @@ EXPERIMENTS = OrderedDict([
 # Key outcomes for comparison tables
 KEY_OUTCOMES = [
     ("net_slant_norm", "Net Slant (Norm.)"),
-    ("ext_nonzero", "Share Non-Zero"),
-    ("ext_R", "Share R-Leaning"),
-    ("ext_D", "Share D-Leaning"),
+    ("share_nonzero", "Share Non-Zero"),
+    ("share_R", "Share R-Leaning"),
+    ("share_D", "Share D-Leaning"),
 ]
 
 # All 13 outcomes for appendix
@@ -97,18 +97,18 @@ ALL_OUTCOMES = [
     ("net_slant_norm", "Net Slant (Norm.)"),
     ("politicization", "Politicization (Raw)"),
     ("politicization_norm", "Politicization (Norm.)"),
-    ("ext_nonzero", "Share Non-Zero"),
-    ("ext_R", "Share R-Leaning"),
-    ("ext_D", "Share D-Leaning"),
+    ("share_nonzero", "Share Non-Zero"),
+    ("share_R", "Share R-Leaning"),
+    ("share_D", "Share D-Leaning"),
 ]
 
 BEST_MODEL = "exp_shvocab_cv"
 
 EVENT_STUDY_FIGS = [
     "event_study_net_slant_norm.png",
-    "event_study_ext_R_vs_D.png",
-    "event_study_ext_R.png",
-    "event_study_ext_D.png",
+    "event_study_share_R_vs_D.png",
+    "event_study_share_R.png",
+    "event_study_share_D.png",
 ]
 
 
@@ -166,7 +166,7 @@ def load_all_data():
         try:
             panel = pd.read_parquet(paths["panel"])
             exp["panel_means"] = {}
-            for col in ["ext_nonzero", "ext_R", "ext_D"]:
+            for col in ["share_nonzero", "share_R", "share_D"]:
                 if col in panel.columns:
                     exp["panel_means"][col] = panel[col].mean()
         except FileNotFoundError:
@@ -343,9 +343,9 @@ Experiment & \% Non-Zero & \% R-Leaning & \% D-Leaning \\
     for name, meta in EXPERIMENTS.items():
         pm = data[name].get("panel_means")
         if pm:
-            nz = pm.get("ext_nonzero", float("nan"))
-            er = pm.get("ext_R", float("nan"))
-            ed = pm.get("ext_D", float("nan"))
+            nz = pm.get("share_nonzero", float("nan"))
+            er = pm.get("share_R", float("nan"))
+            ed = pm.get("share_D", float("nan"))
             doc.append(f"{meta['short']} & {nz*100:.1f}\\% & {er*100:.1f}\\% & {ed*100:.1f}\\% \\\\")
         else:
             doc.append(f"{meta['short']} & \\multicolumn{{3}}{{c}}{{---}} \\\\")
@@ -398,7 +398,7 @@ specifications with 95\% confidence intervals.
     fig_specs = [
         ("event_study_net_slant_norm.png", "Net Slant (Normalized)", "fig:es_slant",
          "Event-study coefficients for normalized net slant. Base year = 1993."),
-        ("event_study_ext_R_vs_D.png", "Extensive Margin: R vs.\\ D Article Share", "fig:es_ext",
+        ("event_study_share_R_vs_D.png", "Extensive Margin: R vs.\\ D Article Share", "fig:es_ext",
          "Event-study coefficients for share of R-leaning (red) and D-leaning (blue) articles."),
         ("event_study_int_R_vs_D.png", "Intensive Margin: R vs.\\ D Intensity", "fig:es_int",
          "Event-study coefficients for R and D intensity conditional on non-zero partisan content."),
@@ -421,9 +421,9 @@ specifications with 95\% confidence intervals.
     best_did = data[BEST_MODEL].get("did")
     ext_r_s3 = ext_d_s3 = None
     if best_did is not None:
-        _r = best_did[(best_did["depvar"] == "ext_R") & (best_did["spec"] == "spec3")]
+        _r = best_did[(best_did["depvar"] == "share_R") & (best_did["spec"] == "spec3")]
         if len(_r): ext_r_s3 = _r.iloc[0]
-        _d = best_did[(best_did["depvar"] == "ext_D") & (best_did["spec"] == "spec3")]
+        _d = best_did[(best_did["depvar"] == "share_D") & (best_did["spec"] == "spec3")]
         if len(_d): ext_d_s3 = _d.iloc[0]
 
     doc.append(r"""
@@ -497,9 +497,9 @@ CZ level) are in parentheses.
                                 ("net_slant_norm", "Net Slant (Norm.)"),
                                 ("politicization", "Politicization (Raw)"),
                                 ("politicization_norm", "Politicization (Norm.)")]),
-            ("Extensive Margin", [("ext_nonzero", "Share Non-Zero"),
-                                   ("ext_R", "Share R-Leaning"),
-                                   ("ext_D", "Share D-Leaning")]),
+            ("Extensive Margin", [("share_nonzero", "Share Non-Zero"),
+                                   ("share_R", "Share R-Leaning"),
+                                   ("share_D", "Share D-Leaning")]),
         ]
 
         for panel_name, outcomes in panels:

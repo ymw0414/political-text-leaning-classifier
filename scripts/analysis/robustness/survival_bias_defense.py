@@ -190,8 +190,8 @@ def main():
 
     outcomes = [
         ("net_slant_norm", "Net Slant"),
-        ("ext_R", "Share R-Leaning"),
-        ("ext_D", "Share D-Leaning"),
+        ("share_R", "Share R-Leaning"),
+        ("share_D", "Share D-Leaning"),
     ]
 
     comparison_rows = []

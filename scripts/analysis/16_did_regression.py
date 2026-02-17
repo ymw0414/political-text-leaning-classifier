@@ -145,9 +145,9 @@ def main():
         ("politicization",       "Politicization (Raw)"),
         ("politicization_norm",  "Politicization (Norm)"),
         # Extensive margins
-        ("ext_nonzero",          "Share Non-Zero"),
-        ("ext_R",                "Share R-Leaning"),
-        ("ext_D",                "Share D-Leaning"),
+        ("share_nonzero",          "Share Non-Zero"),
+        ("share_R",                "Share R-Leaning"),
+        ("share_D",                "Share D-Leaning"),
     ]
 
     all_results = []
